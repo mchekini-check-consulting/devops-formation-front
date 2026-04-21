@@ -1,0 +1,25 @@
+{
+  "/api/catalog": {
+    "target": "http://localhost:4000",
+    "secure": false,
+    "changeOrigin": true,
+    "pathRewrite": { "^/api/catalog": "" }
+  },
+  "/orders": {
+    "target": "http://localhost:8000",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/api/orders": {
+    "target": "http://localhost:8000",
+    "secure": false,
+    "changeOrigin": true,
+    "pathRewrite": { "^/api/orders": "/orders/" }
+  },
+  "/api/payments": {
+    "target": "http://localhost:8082",
+    "secure": false,
+    "changeOrigin": true,
+    "pathRewrite": { "^/api/payments": "/payments/" }
+  }
+}

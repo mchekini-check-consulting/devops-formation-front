@@ -1,0 +1,40 @@
+version: "3.8"
+services:
+  catalog:
+    image: "ghcr.io/your-org/catalog-service:latest"
+    ports:
+      - "4000:4000"
+    environment:
+      - NODE_ENV=development
+
+  orders:
+    image: "ghcr.io/your-org/orders-service:latest"
+    ports:
+      - "8000:8000"
+    environment:
+      - NODE_ENV=development
+
+  payment:
+    image: "ghcr.io/your-org/payment-service:latest"
+    ports:
+      - "8082:8082"
+    environment:
+      - NODE_ENV=development
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    environment:
+      # these will be injected into config.js at container start
+      - CATALOG=http://catalog:4000
+      - ORDERS=http://orders:8000
+      - PAYMENT=http://payment:8082
+    depends_on:
+      - catalog
+      - orders
+      - payment
+    profiles: ["dev"]
+# Example: to run production profile, define different env vars or use an overlay compose
