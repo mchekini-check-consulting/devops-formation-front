@@ -1,5 +1,5 @@
 window.__APP_CONFIG__ = {
-  CATALOG: "__CATALOG__",
-  ORDERS: "__ORDERS__",
-  PAYMENT: "__PAYMENT__",
+  CATALOG: "${CATALOG}",
+  ORDERS: "${ORDERS}",
+  PAYMENT: "${PAYMENT}",
 };

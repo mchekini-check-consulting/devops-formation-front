@@ -14,11 +14,14 @@ function fmt(n: number) {
     currency: "EUR",
   }).format(n);
 }
-function fmtDate(s: string) {
+function fmtDate(s: string | undefined) {
+  if (!s) return "—";
+  const d = new Date(s);
+  if (isNaN(d.getTime())) return "—";
   return new Intl.DateTimeFormat("fr-FR", {
     dateStyle: "short",
     timeStyle: "short",
-  }).format(new Date(s));
+  }).format(d);
 }
 
 export default function PaymentPage() {

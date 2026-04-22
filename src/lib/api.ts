@@ -137,7 +137,7 @@ export const orderService = {
     const url = buildUrl("ORDERS", `/${encodeURIComponent(id)}`);
     try {
       const data = await doFetch(url, {
-        method: "PUT",
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
       });

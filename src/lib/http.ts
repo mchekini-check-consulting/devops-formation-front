@@ -14,8 +14,11 @@ export function buildUrl(service: "CATALOG" | "ORDERS" | "PAYMENT", path = "") {
         return `/api/payments${path}`;
     }
   }
-  const base = API_CONFIG[service].replace(/\/$/, "");
-  return `${base}${path}`;
+  const base = API_CONFIG[service];
+  if (!path) return base;
+  const cleanBase = base.replace(/\/$/, "");
+  const cleanPath = path.startsWith("/") ? path : `/${path}`;
+  return `${cleanBase}${cleanPath}`;
 }
 
 export async function doFetch(url: string, opts?: RequestInit) {
