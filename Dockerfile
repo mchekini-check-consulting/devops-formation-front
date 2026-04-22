@@ -10,13 +10,17 @@ RUN npm run build
 
 # ── Stage 2: serve ─────────────────────────────────────────────
 FROM nginx:alpine AS runner
+
+# Install gettext for envsubst
+RUN apk add --no-cache gettext
+
 COPY --from=builder /app/build /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
-
-# Copy the runtime config template and entrypoint
 COPY --from=builder /app/public/config.js.template /usr/share/nginx/html/config.js.template
-COPY --from=builder /app/docker/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+COPY entrypoint.sh /entrypoint.sh
+
+# Fix Windows line endings and make executable
+RUN sed -i 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh
 
 EXPOSE 80
 ENTRYPOINT ["/entrypoint.sh"]
