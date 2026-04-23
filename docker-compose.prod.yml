@@ -20,13 +20,12 @@ services:
 
   catalogue-db:
     image: postgres:17-alpine
-    command: -p 5434
     environment:
       POSTGRES_DB: catalogue_db
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -p 5434"]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -52,18 +51,18 @@ services:
       - backend
 
   payment-db:
-    image: postgres:18
+    image: postgres:17-alpine
     environment:
       POSTGRES_DB: payment_db
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d payment_db"]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
     volumes:
-      - payment_pgdata:/var/lib/postgresql/pgdata
+      - payment_pgdata:/var/lib/postgresql/data
     networks:
       - backend
 
@@ -75,7 +74,7 @@ services:
       PORT: 4000
       NODE_ENV: production
       DB_HOST: catalogue-db
-      DB_PORT: 5434
+      DB_PORT: 5432
       DB_NAME: catalogue_db
       DB_USER: postgres
       DB_PASSWORD: postgres
@@ -99,7 +98,6 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_HOST: orders-db
       POSTGRES_PORT: 5432
-      CORS_ALLOWED_ORIGINS: http://${VM_HOST:-localhost}
     depends_on:
       orders-db:
         condition: service_healthy
@@ -126,7 +124,7 @@ services:
     image: jubatouam/ecommerce-frontend:latest
     environment:
       CATALOG: http://${VM_HOST:-localhost}/api/catalog
-      ORDERS: http://${VM_HOST:-localhost}/api/orders/
+      ORDERS: http://${VM_HOST:-localhost}/api/orders
       PAYMENT: http://${VM_HOST:-localhost}/api/payments
     depends_on:
       - catalogue-service
