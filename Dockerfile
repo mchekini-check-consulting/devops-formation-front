@@ -4,7 +4,7 @@ WORKDIR /app
 
 COPY package.json ./
 RUN npm install
-
+ENV NODE_ENV=development
 COPY . .
 RUN npm run build
 
@@ -13,7 +13,7 @@ FROM nginx:alpine AS runner
 
 # Install gettext for envsubst
 RUN apk add --no-cache gettext
-
+ENV NODE_ENV=development
 COPY --from=builder /app/build /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=builder /app/public/config.js.template /usr/share/nginx/html/config.js.template
