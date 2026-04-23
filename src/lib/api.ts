@@ -47,7 +47,7 @@ export const catalogService = {
     // In development use CRA dev proxy (relative paths); in production call configured API_CONFIG directly
     const url = buildUrl(
       "CATALOG",
-      `/products${params.toString() ? `?${params.toString()}` : ""}`
+      `${params.toString() ? `?${params.toString()}` : ""}`
     );
     try {
       const data = await doFetch(url, { method: "GET" });
@@ -61,7 +61,7 @@ export const catalogService = {
     }
   },
   async createProduct(payload: CreateProductPayload): Promise<Product> {
-    const url = buildUrl("CATALOG", "/products");
+    const url = buildUrl("CATALOG");
     try {
       const data = await doFetch(url, {
         method: "POST",
@@ -77,7 +77,7 @@ export const catalogService = {
   },
 
   async deleteProduct(id: string): Promise<void> {
-    const url = buildUrl("CATALOG", `/products/${encodeURIComponent(id)}`);
+    const url = buildUrl("CATALOG", `{encodeURIComponent(id)}`);
     try {
       await doFetch(url, { method: "DELETE" });
       return;

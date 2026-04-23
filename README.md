@@ -2,56 +2,38 @@
 
 Application React 18 (SPA) connectée aux microservices catalog, order et payment.
 
-## Lancement rapide
+## Lancement en local (dev)
 
 ```bash
 npm install
-cp .env.example .env.local
 npm start           # → http://localhost:3000
 ```
 
-By default the app will call the real microservices. Ensure the catalog service is running on port 4000 (or set `REACT_APP_CATALOG`).
+Le proxy de dev (`proxy.conf.json`) redirige automatiquement les appels API vers les backends locaux :
 
-## Docker (build-once + runtime config)
+| Route frontend     | Backend                          |
+| ------------------ | -------------------------------- |
+| `/api/catalog`     | `http://localhost:4000`          |
+| `/api/orders`      | `http://localhost:8000`          |
+| `/api/payments`    | `http://localhost:8082`          |
 
-This project builds the static bundle at image build time, and injects runtime API endpoints when the container starts. The image contains a `config.js.template` and an entrypoint that writes `config.js` into the static folder from environment variables.
+Les 3 backends doivent être  lancé avec `docker compose up --build` dans son propre repo.
 
-Example: build the image and run the container with environment variables:
+## Lancement avec Docker
 
 ```bash
-# build image (creates optimized static bundle inside image)
+# Build l'image
 docker build -t ecommerce-frontend:latest .
 
-# run container and inject endpoints at container start
-docker run --rm -p 8080:80 \
-  -e CATALOG='https://catalog.example' \
-  -e ORDERS='https://orders.example' \
-  -e PAYMENT='https://payment.example' \
+# Lancer le container
+docker run --rm -p 3000:80 \
+  -e CATALOG='http://localhost:4000/api/catalog' \
+  -e ORDERS='http://localhost:8000/api/orders' \
+  -e PAYMENT='http://localhost:8082/api/payments' \
   ecommerce-frontend:latest
 ```
 
-The entrypoint will generate `/usr/share/nginx/html/config.js` using the template and the provided environment variables. The app reads `window.__APP_CONFIG__` at runtime so the same image can be reused across environments.
-
-For local development with backend services we also provide a `docker-compose.yml` (dev profile) that starts the three backend services and the frontend. Compose injects service hostnames into the frontend at runtime.
-
-```bash
-# start the stack (uses the 'dev' profile frontend)
-docker compose --profile dev up --build
-```
-
-## Variables d'environnement
-
-| Variable                         | Défaut                  |
-| -------------------------------- | ----------------------- |
-| `CATALOG` or `REACT_APP_CATALOG` | `http://localhost:4000` |
-| `ORDERS` or `REACT_APP_ORDERS`   | `http://localhost:8000` |
-| `PAYMENT` or `REACT_APP_PAYMENT` | `http://localhost:8082` |
-
-## Intégration microservices
-
-Le frontend appelle les microservices catalog, order et payment via le client dans `src/lib/api.ts`.
-
-Assurez-vous que les services sont accessibles (voir `CATALOG`, `ORDERS`, `PAYMENT` ou `REACT_APP_*` variables).
+L'app est accessible sur **http://localhost:3000**. Les backends doivent etre lancer (`docker compose up --build` dans chaque repo).
 
 ## Structure
 
@@ -59,14 +41,16 @@ Assurez-vous que les services sont accessibles (voir `CATALOG`, `ORDERS`, `PAYME
 src/
 ├── lib/
 │   ├── api.ts          # Client HTTP pour catalog, order et payment
-│   └── cart.tsx        # État panier (React Context)
+│   ├── http.ts         # buildUrl + doFetch
+│   ├── config.ts       # Lecture de window.__APP_CONFIG__
+│   └── cart.tsx         # Etat panier (React Context)
 ├── components/
-│   ├── layout/Navbar   # Barre de navigation
+│   ├── layout/Navbar    # Barre de navigation
 │   └── pages/
-│       ├── CatalogPage # Catalogue + filtres
-│       ├── CartPage    # Panier + création commande
-│       ├── OrdersPage  # Liste commandes + paiement
-│       └── PaymentPage # Historique paiements
-├── App.tsx             # Routing interne (state-based)
-└── index.css           # Design system complet
+│       ├── CatalogPage  # Catalogue + filtres
+│       ├── CartPage     # Panier + creation commande
+│       ├── OrdersPage   # Liste commandes + paiement
+│       └── PaymentPage  # Historique paiements
+├── App.tsx              # Routing interne (state-based)
+└── index.css            # Design system complet
 ```

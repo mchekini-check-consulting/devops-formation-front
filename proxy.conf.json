@@ -4,12 +4,11 @@
     "secure": false,
     "changeOrigin": true
   },
-  "/orders": {
+  "/api/orders": {
     "target": "http://localhost:8000",
     "secure": false,
     "changeOrigin": true
   },
-
   "/api/payments": {
     "target": "http://localhost:8082",
     "secure": false,
