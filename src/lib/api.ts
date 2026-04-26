@@ -77,7 +77,7 @@ export const catalogService = {
   },
 
   async deleteProduct(id: string): Promise<void> {
-    const url = buildUrl("CATALOG", `{encodeURIComponent(id)}`);
+    const url = buildUrl("CATALOG", `/${encodeURIComponent(id)}`);
     try {
       await doFetch(url, { method: "DELETE" });
       return;
