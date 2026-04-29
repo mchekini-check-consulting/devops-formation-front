@@ -1,0 +1,17 @@
+{
+  "/api/catalog": {
+    "target": "http://localhost:4000",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/api/orders": {
+    "target": "http://localhost:8000",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/api/payments": {
+    "target": "http://localhost:8082",
+    "secure": false,
+    "changeOrigin": true
+  }
+}
