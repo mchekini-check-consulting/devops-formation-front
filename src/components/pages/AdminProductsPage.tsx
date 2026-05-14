@@ -2,6 +2,14 @@ import React, { useEffect, useState } from "react";
 import { catalogService, ApiError } from "../../lib/api";
 import type { Product, CreateProductPayload } from "../../types/api";
 import { CATEGORIES } from "../../lib/constants";
+import { AlertIcon, BoxIcon, CrossIcon } from "../icons";
+
+function fmt(n: number) {
+  return new Intl.NumberFormat("fr-FR", {
+    style: "currency",
+    currency: "EUR",
+  }).format(n);
+}
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -44,7 +52,6 @@ export default function AdminProductsPage() {
     try {
       const created = await catalogService.createProduct(payload);
       setProducts((s) => [created, ...s]);
-      // reset
       setName("");
       setPrice("");
       setCategory("Informatique");
@@ -75,55 +82,72 @@ export default function AdminProductsPage() {
   return (
     <div>
       <div className="page-header">
-        <div className="breadcrumb">
-          <span>catalog-service</span>
-          <span>›</span>
-          <span>Admin</span>
-        </div>
         <h1>Gestion des produits</h1>
         <p>Créer et supprimer des produits</p>
       </div>
 
-      <div className="card mb-4">
+      {/* Add product form */}
+      <div className="card mb-6">
+        <div className="card-header">
+          <BoxIcon size={16} />
+          Ajouter un produit
+        </div>
         <div className="card-body">
-          <form
-            onSubmit={handleAdd}
-            style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}
-          >
-            <input
-              className="form-control"
-              placeholder="Nom"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-            <input
-              className="form-control"
-              placeholder="Prix"
-              type="number"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-            />
-            <select
-              className="form-control form-select"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-            >
-              {CATEGORIES.filter((c) => c !== "Tous").map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-            <input
-              className="form-control"
-              placeholder="Description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              style={{ gridColumn: "1 / -1" }}
-            />
-            <div style={{ gridColumn: "1 / -1", display: "flex", gap: 8 }}>
+          <form onSubmit={handleAdd}>
+            <div className="grid-2 mb-4">
+              <div className="form-group">
+                <label className="form-label text-xs">Nom du produit</label>
+                <input
+                  className="form-control"
+                  placeholder="Nom"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label text-xs">Prix (€)</label>
+                <input
+                  className="form-control"
+                  placeholder="0.00"
+                  type="number"
+                  step="0.01"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="grid-2 mb-4">
+              <div className="form-group">
+                <label className="form-label text-xs">Catégorie</label>
+                <select
+                  className="form-control form-select"
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                >
+                  {CATEGORIES.filter((c) => c !== "Tous").map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label text-xs">Description (optionnel)</label>
+                <input
+                  className="form-control"
+                  placeholder="Description du produit..."
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="d-flex gap-2">
               <button className="btn btn-primary" type="submit">
-                Ajouter
+                Ajouter le produit
               </button>
               <button
                 type="button"
@@ -142,13 +166,34 @@ export default function AdminProductsPage() {
         </div>
       </div>
 
-      {error && <div className="alert alert-danger mb-4">{error}</div>}
+      {error && (
+        <div className="alert alert-danger mb-6">
+          <AlertIcon size={16} />
+          {error}
+        </div>
+      )}
 
       {loading ? (
-        <div>Chargement...</div>
+        <div className="card">
+          <div className="card-body" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="skeleton" style={{ height: 48 }} />
+            ))}
+          </div>
+        </div>
+      ) : products.length === 0 ? (
+        <div className="empty-state">
+          <BoxIcon size={48} />
+          <h3>Aucun produit</h3>
+          <p>Ajoutez votre premier produit avec le formulaire ci-dessus</p>
+        </div>
       ) : (
         <div className="card">
-          <div className="card-body">
+          <div className="card-header">
+            <BoxIcon size={16} />
+            Produits ({products.length})
+          </div>
+          <div className="table-wrap">
             <table className="table">
               <thead>
                 <tr>
@@ -163,22 +208,25 @@ export default function AdminProductsPage() {
               <tbody>
                 {products.map((p) => (
                   <tr key={p.id}>
-                    <td className="text-xs text-muted">{p.id}</td>
-                    <td>{p.name}</td>
                     <td>
-                      {new Intl.NumberFormat("fr-FR", {
-                        style: "currency",
-                        currency: "EUR",
-                      }).format(p.price)}
+                      <code className="font-mono text-xs text-muted">
+                        ...{p.id.slice(-8)}
+                      </code>
                     </td>
-                    <td>{p.category}</td>
-                    <td>{p.stock ?? "-"}</td>
+                    <td className="fw-600">{p.name}</td>
+                    <td className="fw-600">{fmt(p.price)}</td>
+                    <td>
+                      <span className="badge badge-secondary">{p.category}</span>
+                    </td>
+                    <td className="text-muted">{p.stock ?? "—"}</td>
                     <td style={{ textAlign: "right" }}>
                       <button
-                        className="btn btn-danger btn-sm"
+                        className="btn btn-ghost btn-icon btn-sm"
+                        style={{ color: "var(--destructive)" }}
                         onClick={() => handleDelete(p.id)}
+                        title="Supprimer"
                       >
-                        Supprimer
+                        <CrossIcon size={16} />
                       </button>
                     </td>
                   </tr>

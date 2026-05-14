@@ -75,8 +75,6 @@ function OrderRow({ order, isNew, userId, productMap }: OrderRowProps) {
           newStatus as Order["status"]
         );
       } catch (err) {
-        // if updating the order fails, surface a warning but keep payment result
-        // eslint-disable-next-line no-console
         console.error("Failed to persist order status after payment", err);
         setError("Paiement reçu mais impossible de mettre à jour la commande.");
       }
@@ -93,12 +91,9 @@ function OrderRow({ order, isNew, userId, productMap }: OrderRowProps) {
 
   return (
     <div
-      className="card mb-3"
+      className="card mb-4"
       style={{
-        borderLeft: isNew
-          ? "3px solid var(--blue)"
-          : "1px solid var(--gray-200)",
-        borderRadius: "var(--radius-lg)",
+        borderLeft: isNew ? "3px solid var(--primary)" : undefined,
       }}
     >
       {/* Order header row */}
@@ -113,19 +108,14 @@ function OrderRow({ order, isNew, userId, productMap }: OrderRowProps) {
       >
         <div className="d-flex align-center gap-3">
           {isNew && <span className="badge badge-primary">Nouvelle</span>}
-          <span
-            className="font-mono text-sm"
-            style={{ color: "var(--gray-500)" }}
-          >
+          <span className="font-mono text-sm text-muted">
             #{order.id.slice(-10).toUpperCase()}
           </span>
           <StatusBadge status={status} />
         </div>
         <div className="d-flex align-center gap-3">
-          <span className="text-sm text-muted">
-            {fmtDate(order.created_at)}
-          </span>
-          <span style={{ fontWeight: 800, fontSize: 16 }}>
+          <span className="text-sm text-muted">{fmtDate(order.created_at)}</span>
+          <span style={{ fontWeight: 700, fontSize: "1rem" }}>
             {fmt(order.total_price)}
           </span>
           <ChevronIcon open={open} />
@@ -136,27 +126,22 @@ function OrderRow({ order, isNew, userId, productMap }: OrderRowProps) {
       {open && (
         <div className="card-body">
           {/* User id */}
-          <div className="mb-3">
+          <div className="mb-4">
             <span
-              className="text-xs fw-600 text-muted"
+              className="text-xs fw-500 text-muted"
               style={{
                 textTransform: "uppercase",
-                letterSpacing: ".06em",
+                letterSpacing: ".05em",
                 marginRight: 8,
               }}
             >
               user_id
             </span>
-            <code
-              className="font-mono text-sm"
-              style={{ color: "var(--blue)" }}
-            >
-              {order.user_id}
-            </code>
+            <code className="font-mono text-sm text-primary">{order.user_id}</code>
           </div>
 
           {/* Products table */}
-          <div className="table-wrap mb-3">
+          <div className="table-wrap mb-4">
             <table className="table">
               <thead>
                 <tr>
@@ -168,7 +153,6 @@ function OrderRow({ order, isNew, userId, productMap }: OrderRowProps) {
               </thead>
               <tbody>
                 {order.products.map((p, i) => {
-                  // Backend may return unit_price (as in docs) instead of price.
                   const unitPrice =
                     (p as any).unit_price ??
                     (p as any).unitPrice ??
@@ -194,13 +178,13 @@ function OrderRow({ order, isNew, userId, productMap }: OrderRowProps) {
                     colSpan={3}
                     style={{
                       textAlign: "right",
-                      fontWeight: 700,
+                      fontWeight: 600,
                       paddingRight: 14,
                     }}
                   >
                     Total
                   </td>
-                  <td style={{ fontWeight: 800, fontSize: 15 }}>
+                  <td style={{ fontWeight: 700, fontSize: "1rem" }}>
                     {fmt(order.total_price)}
                   </td>
                 </tr>
@@ -215,14 +199,18 @@ function OrderRow({ order, isNew, userId, productMap }: OrderRowProps) {
                 payment.status === "SUCCESS" ? "alert-success" : "alert-danger"
               }`}
             >
-              {payment.status === "SUCCESS" ? <CheckIcon /> : <CrossIcon />}
+              {payment.status === "SUCCESS" ? (
+                <CheckIcon size={16} />
+              ) : (
+                <CrossIcon size={16} />
+              )}
               <div>
                 <strong>
                   {payment.status === "SUCCESS"
                     ? "Paiement accepté"
                     : "Paiement refusé"}
                 </strong>
-                <div className="text-sm" style={{ marginTop: 2 }}>
+                <div className="text-sm" style={{ marginTop: 4 }}>
                   ID paiement : <code className="font-mono">{payment.id}</code>
                   {" · "}
                   Montant : <strong>{fmt(payment.amount)}</strong>
@@ -232,8 +220,8 @@ function OrderRow({ order, isNew, userId, productMap }: OrderRowProps) {
               </div>
             </div>
           ) : error ? (
-            <div className="alert alert-danger mb-2">
-              <AlertIcon />
+            <div className="alert alert-danger mb-3">
+              <AlertIcon size={16} />
               {error}
             </div>
           ) : null}
@@ -246,12 +234,12 @@ function OrderRow({ order, isNew, userId, productMap }: OrderRowProps) {
             >
               {paying ? (
                 <>
-                  <SpinnerIcon />
+                  <SpinnerIcon size={16} />
                   Traitement paiement...
                 </>
               ) : (
                 <>
-                  <CardIcon />
+                  <CardIcon size={16} />
                   Payer {fmt(order.total_price)}
                 </>
               )}
@@ -297,11 +285,6 @@ export default function OrdersPage({ highlightOrderId }: Props) {
   return (
     <div>
       <div className="page-header">
-        <div className="breadcrumb">
-          <span>order-service</span>
-          <span>›</span>
-          <span>GET /orders</span>
-        </div>
         <h1>Commandes</h1>
         <p>
           {orders.length} commande{orders.length !== 1 ? "s" : ""}
@@ -309,11 +292,11 @@ export default function OrdersPage({ highlightOrderId }: Props) {
       </div>
 
       {orders.length > 0 && (
-        <div className="grid-3 mb-4">
+        <div className="grid-3 mb-6">
           {[
             { label: "En attente", value: pending, cls: "text-muted" },
-            { label: "Payées", value: paid, cls: "text-green" },
-            { label: "Échouées", value: failed, cls: "text-red" },
+            { label: "Payées", value: paid, cls: "text-success" },
+            { label: "Échouées", value: failed, cls: "text-destructive" },
           ].map((s) => (
             <div className="card stat-card" key={s.label}>
               <div className="stat-label">{s.label}</div>
@@ -324,28 +307,25 @@ export default function OrdersPage({ highlightOrderId }: Props) {
       )}
 
       {error && (
-        <div className="alert alert-danger mb-4">
-          <AlertIcon />
+        <div className="alert alert-danger mb-6">
+          <AlertIcon size={16} />
           {error}
         </div>
       )}
 
       {loading ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           {[1, 2, 3].map((i) => (
             <div className="card" key={i}>
               <div className="card-header">
-                <div
-                  className="skeleton"
-                  style={{ height: 20, width: "60%" }}
-                />
+                <div className="skeleton" style={{ height: 20, width: "60%" }} />
               </div>
             </div>
           ))}
         </div>
       ) : orders.length === 0 ? (
         <div className="empty-state">
-          <BoxIcon size={40} />
+          <BoxIcon size={48} />
           <h3>Aucune commande</h3>
           <p>Ajoutez des produits au panier et créez votre première commande</p>
         </div>

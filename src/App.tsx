@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import "./index.css";
 import { CartProvider } from "./lib/cart";
-import Navbar from "./components/layout/Navbar";
+import Sidebar from "./components/layout/Sidebar";
 import CatalogPage from "./components/pages/CatalogPage";
 import CartPage from "./components/pages/CartPage";
 import OrdersPage from "./components/pages/OrdersPage";
@@ -21,15 +21,19 @@ export default function App() {
 
   return (
     <CartProvider>
-      <Navbar page={page} setPage={setPage} />
-      <div className="container page">
-        {page === "catalog" && <CatalogPage />}
-        {page === "cart" && <CartPage goToOrders={goToOrders} />}
-        {page === "orders" && (
-          <OrdersPage highlightOrderId={highlightOrderId} />
-        )}
-        {page === "payment" && <PaymentPage />}
-        {page === "admin" && <AdminProductsPage />}
+      <div className="min-h-screen" style={{ background: "var(--background)" }}>
+        <Sidebar page={page} setPage={setPage} />
+        <main className="main-content">
+          <div className="main-container">
+            {page === "catalog" && <CatalogPage />}
+            {page === "cart" && <CartPage goToOrders={goToOrders} />}
+            {page === "orders" && (
+              <OrdersPage highlightOrderId={highlightOrderId} />
+            )}
+            {page === "payment" && <PaymentPage />}
+            {page === "admin" && <AdminProductsPage />}
+          </div>
+        </main>
       </div>
     </CartProvider>
   );

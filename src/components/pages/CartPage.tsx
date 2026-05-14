@@ -4,7 +4,7 @@ import { orderService } from "../../lib/api";
 import CardIcon from "../icons/CardIcon";
 import SpinnerIcon from "../icons/SpinnerIcon";
 import CrossIcon from "../icons/CrossIcon";
-import { AlertIcon, GridIcon, BoxIcon } from "../icons";
+import { AlertIcon, BoxIcon } from "../icons";
 
 function fmt(n: number) {
   return new Intl.NumberFormat("fr-FR", {
@@ -49,19 +49,13 @@ export default function CartPage({ goToOrders }: Props) {
     return (
       <div>
         <div className="page-header">
-          <div className="breadcrumb">
-            <span>order-service</span>
-            <span>›</span>
-            <span>POST /orders</span>
-          </div>
           <h1>Panier</h1>
+          <p>Vos articles sélectionnés</p>
         </div>
         <div className="empty-state">
-          <CardIcon size={40} />
+          <CardIcon size={48} />
           <h3>Votre panier est vide</h3>
-          <p style={{ marginBottom: 16 }}>
-            Ajoutez des produits depuis le catalogue
-          </p>
+          <p>Ajoutez des produits depuis le catalogue</p>
         </div>
       </div>
     );
@@ -70,58 +64,18 @@ export default function CartPage({ goToOrders }: Props) {
   return (
     <div>
       <div className="page-header">
-        <div className="breadcrumb">
-          <span>order-service</span>
-          <span>›</span>
-          <span>POST /orders</span>
-        </div>
         <h1>Panier</h1>
         <p>
           {count} article{count > 1 ? "s" : ""}
         </p>
       </div>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 360px",
-          gap: 24,
-          alignItems: "start",
-        }}
-      >
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: 24, alignItems: "start" }}>
         {/* Items */}
         <div className="card">
           <div className="card-header">
-            <GridIcon />
+            <CardIcon size={16} />
             Articles sélectionnés
-          </div>
-
-          {/* User ID */}
-          <div
-            style={{
-              padding: "10px 20px",
-              background: "var(--blue-light)",
-              borderBottom: "1px solid var(--gray-100)",
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-            }}
-          >
-            <span
-              className="text-xs text-muted fw-600"
-              style={{ textTransform: "uppercase", letterSpacing: ".06em" }}
-            >
-              user_id
-            </span>
-            <code
-              style={{
-                fontFamily: "var(--mono)",
-                fontSize: 12,
-                color: "var(--blue)",
-              }}
-            >
-              {state.userId}
-            </code>
           </div>
 
           <div className="table-wrap">
@@ -140,20 +94,15 @@ export default function CartPage({ goToOrders }: Props) {
                   <tr key={item.product.id}>
                     <td>
                       <div>
-                        <div className="fw-600" style={{ fontSize: 14 }}>
+                        <p className="fw-600 text-sm" style={{ margin: 0 }}>
                           {item.product.name}
-                        </div>
-                        <span
-                          className="badge badge-gray text-xs"
-                          style={{ marginTop: 4 }}
-                        >
+                        </p>
+                        <span className="badge badge-secondary text-xs" style={{ marginTop: 4 }}>
                           {item.product.category}
                         </span>
                       </div>
                     </td>
-                    <td className="font-mono" style={{ fontSize: 13 }}>
-                      {fmt(item.product.price)}
-                    </td>
+                    <td className="font-mono text-sm">{fmt(item.product.price)}</td>
                     <td>
                       <div className="qty-control">
                         <button
@@ -183,21 +132,14 @@ export default function CartPage({ goToOrders }: Props) {
                         </button>
                       </div>
                     </td>
-                    <td style={{ fontWeight: 700, fontSize: 14 }}>
-                      {fmt(item.product.price * item.quantity)}
-                    </td>
+                    <td className="fw-600">{fmt(item.product.price * item.quantity)}</td>
                     <td>
                       <button
-                        className="btn btn-outline btn-sm"
-                        style={{
-                          color: "var(--red)",
-                          borderColor: "var(--red)",
-                        }}
-                        onClick={() =>
-                          dispatch({ type: "REMOVE", id: item.product.id })
-                        }
+                        className="btn btn-ghost btn-icon btn-sm"
+                        style={{ color: "var(--destructive)" }}
+                        onClick={() => dispatch({ type: "REMOVE", id: item.product.id })}
                       >
-                        <CrossIcon />
+                        <CrossIcon size={16} />
                       </button>
                     </td>
                   </tr>
@@ -210,55 +152,33 @@ export default function CartPage({ goToOrders }: Props) {
         {/* Summary */}
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <div className="card">
-            <div className="card-header">
-              <GridIcon />
-              Récapitulatif
-            </div>
-            <div
-              className="card-body"
-              style={{ display: "flex", flexDirection: "column", gap: 12 }}
-            >
+            <div className="card-header">Récapitulatif</div>
+            <div className="card-body" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {state.items.map((i) => (
-                <div
-                  key={i.product.id}
-                  className="d-flex justify-between align-center"
-                >
+                <div key={i.product.id} className="d-flex justify-between align-center">
                   <span className="text-sm text-muted">
-                    {i.product.name} ×{i.quantity}
+                    {i.product.name} × {i.quantity}
                   </span>
-                  <span className="text-sm fw-600">
-                    {fmt(i.product.price * i.quantity)}
-                  </span>
+                  <span className="text-sm fw-600">{fmt(i.product.price * i.quantity)}</span>
                 </div>
               ))}
-              <hr className="divider" />
+              <hr className="separator" />
               <div className="d-flex justify-between align-center">
-                <span className="fw-700">Total</span>
-                <span
-                  style={{
-                    fontSize: 20,
-                    fontWeight: 800,
-                    color: "var(--gray-900)",
-                  }}
-                >
+                <span className="fw-600">Total</span>
+                <span style={{ fontSize: "1.25rem", fontWeight: 800, color: "var(--foreground)" }}>
                   {fmt(total)}
                 </span>
               </div>
               <div className="d-flex justify-between align-center">
                 <span className="text-sm text-muted">Livraison</span>
-                <span
-                  className="text-sm"
-                  style={{ color: "var(--green)", fontWeight: 700 }}
-                >
-                  Gratuite
-                </span>
+                <span className="text-sm fw-600 text-success">Gratuite</span>
               </div>
             </div>
           </div>
 
           {error && (
             <div className="alert alert-danger">
-              <AlertIcon />
+              <AlertIcon size={16} />
               {error}
             </div>
           )}
@@ -271,11 +191,11 @@ export default function CartPage({ goToOrders }: Props) {
             {loading ? (
               <>
                 <SpinnerIcon size={18} />
-                Création de la commande...
+                Création en cours...
               </>
             ) : (
               <>
-                <BoxIcon size={15} />
+                <BoxIcon size={18} />
                 Créer la commande
               </>
             )}

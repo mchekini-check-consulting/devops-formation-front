@@ -57,11 +57,6 @@ export default function PaymentPage() {
   return (
     <div>
       <div className="page-header">
-        <div className="breadcrumb">
-          <span>payment-service</span>
-          <span>›</span>
-          <span>GET /payments</span>
-        </div>
         <h1>Historique des paiements</h1>
         <p>
           {payments.length} transaction{payments.length !== 1 ? "s" : ""}
@@ -69,18 +64,18 @@ export default function PaymentPage() {
       </div>
 
       {/* Simulation notice */}
-      <div className="alert alert-info mb-4" style={{ marginBottom: 24 }}>
-        <AlertIcon />
+      <div className="alert alert-info mb-6">
+        <AlertIcon size={16} />
         <div>
           <strong>Mode simulation</strong> — Le payment-service retourne{" "}
-          <code>SUCCESS</code> avec une probabilité de 80% et{" "}
-          <code>FAILED</code> avec 20%.
+          <code className="font-mono">SUCCESS</code> avec une probabilité de 80% et{" "}
+          <code className="font-mono">FAILED</code> avec 20%.
         </div>
       </div>
 
       {/* Stats */}
       {payments.length > 0 && (
-        <div className="grid-4 mb-4">
+        <div className="grid-4 mb-6">
           {[
             {
               label: "Transactions",
@@ -92,26 +87,26 @@ export default function PaymentPage() {
               label: "Acceptées",
               value: success.length,
               sub: `${rate}% de succès`,
-              cls: "text-green",
+              cls: "text-success",
             },
             {
               label: "Refusées",
               value: failed.length,
               sub: `${100 - rate}% d'échec`,
-              cls: "text-red",
+              cls: "text-destructive",
             },
             {
               label: "Volume traité",
               value: fmt(volume),
               sub: "paiements acceptés",
-              cls: "text-blue",
+              cls: "text-primary",
             },
           ].map((s) => (
             <div className="card stat-card" key={s.label}>
               <div className="stat-label">{s.label}</div>
               <div
                 className={`stat-value ${s.cls}`}
-                style={{ fontSize: typeof s.value === "string" ? 20 : 28 }}
+                style={{ fontSize: typeof s.value === "string" ? "1.25rem" : "1.75rem" }}
               >
                 {s.value}
               </div>
@@ -122,18 +117,15 @@ export default function PaymentPage() {
       )}
 
       {error && (
-        <div className="alert alert-danger mb-4">
-          <AlertIcon />
+        <div className="alert alert-danger mb-6">
+          <AlertIcon size={16} />
           {error}
         </div>
       )}
 
       {loading ? (
         <div className="card">
-          <div
-            className="card-body"
-            style={{ display: "flex", flexDirection: "column", gap: 12 }}
-          >
+          <div className="card-body" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {[1, 2, 3, 4].map((i) => (
               <div key={i} className="skeleton" style={{ height: 40 }} />
             ))}
@@ -141,16 +133,14 @@ export default function PaymentPage() {
         </div>
       ) : payments.length === 0 ? (
         <div className="empty-state">
-          <CreditIcon size={40} />
+          <CreditIcon size={48} />
           <h3>Aucun paiement</h3>
-          <p>
-            Les paiements s'afficheront ici après avoir traité des commandes
-          </p>
+          <p>Les paiements s'afficheront ici après avoir traité des commandes</p>
         </div>
       ) : (
         <div className="card">
           <div className="card-header">
-            <CreditIcon size={14} />
+            <CreditIcon size={16} />
             Transactions ({payments.length})
           </div>
           <div className="table-wrap">
@@ -169,28 +159,16 @@ export default function PaymentPage() {
                 {payments.map((p) => (
                   <tr key={p.id}>
                     <td>
-                      <code
-                        className="font-mono text-xs"
-                        style={{ color: "var(--gray-600)" }}
-                      >
-                        {p.id}
-                      </code>
+                      <code className="font-mono text-xs text-muted">{p.id}</code>
                     </td>
                     <td>
-                      <code
-                        className="font-mono text-xs"
-                        style={{ color: "var(--blue)" }}
-                      >
+                      <code className="font-mono text-xs text-primary">
                         ...{p.order_id.slice(-10).toUpperCase()}
                       </code>
                     </td>
-                    <td className="text-sm text-muted font-mono">
-                      {p.user_id}
-                    </td>
-                    <td className="text-sm text-muted">
-                      {fmtDate(p.created_at)}
-                    </td>
-                    <td style={{ fontWeight: 700 }}>{fmt(p.amount)}</td>
+                    <td className="text-sm text-muted font-mono">{p.user_id}</td>
+                    <td className="text-sm text-muted">{fmtDate(p.created_at)}</td>
+                    <td className="fw-700">{fmt(p.amount)}</td>
                     <td>
                       {p.status === "SUCCESS" ? (
                         <span className="badge badge-success">

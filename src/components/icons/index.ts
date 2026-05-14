@@ -11,3 +11,4 @@ export { default as BoxIcon } from "./BoxIcon";
 export { default as CreditIcon } from "./CreditIcon";
 export { default as ChevronIcon } from "./ChevronIcon";
 export { default as AlertIcon } from "./AlertIcon";
+export { default as SettingsIcon } from "./SettingsIcon";
