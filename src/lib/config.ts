@@ -17,3 +17,9 @@ export const API_CONFIG = {
   ORDERS: envOr("ORDERS", "http://localhost:8000"),
   PAYMENT: envOr("PAYMENT", "http://localhost:8082"),
 };
+
+export const KEYCLOAK_CONFIG = {
+  URL: envOr("KEYCLOAK_URL", "http://localhost:8080"),
+  REALM: envOr("KEYCLOAK_REALM", "ecommerce"),
+  CLIENT_ID: envOr("KEYCLOAK_CLIENT_ID", "ecommerce-front"),
+};
