@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useReducer, ReactNode } from "react";
 import { Product } from "../types/api";
+import { setUserId } from "./http";
 
 export interface CartItem {
   product: Product;
@@ -68,10 +69,13 @@ const Ctx = createContext<{
   count: number;
 } | null>(null);
 
+const _initialUserId = "user-" + Math.random().toString(36).slice(2, 8);
+setUserId(_initialUserId);
+
 export function CartProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, {
     items: [],
-    userId: "user-" + Math.random().toString(36).slice(2, 8),
+    userId: _initialUserId,
   });
   const total = state.items.reduce(
     (s, i) => s + i.product.price * i.quantity,
