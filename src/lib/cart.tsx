@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useReducer, ReactNode } from "react";
 import { Product } from "../types/api";
 import { setUserId } from "./http";
-import { getUsername } from "../services/keycloak";
 
 export interface CartItem {
   product: Product;
@@ -70,7 +69,7 @@ const Ctx = createContext<{
   count: number;
 } | null>(null);
 
-const _initialUserId = getUsername() || "anonymous";
+const _initialUserId = "anonymous";
 setUserId(_initialUserId);
 
 export function CartProvider({ children }: { children: ReactNode }) {

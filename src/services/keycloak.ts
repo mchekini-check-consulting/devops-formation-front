@@ -8,17 +8,30 @@ const keycloak = new Keycloak({
 });
 
 export async function initKeycloak(): Promise<boolean> {
+  const token = sessionStorage.getItem("kc_token") || undefined;
+  const refreshToken = sessionStorage.getItem("kc_refreshToken") || undefined;
+
   const authenticated = await keycloak.init({
-    onLoad: "check-sso",
-    silentCheckSsoRedirectUri: window.location.origin + "/silent-check-sso.html",
+    onLoad: "login-required",
     checkLoginIframe: false,
+    token,
+    refreshToken,
   });
 
-  if (!authenticated) {
-    await keycloak.login();
+  if (authenticated) {
+    sessionStorage.setItem("kc_token", keycloak.token!);
+    sessionStorage.setItem("kc_refreshToken", keycloak.refreshToken!);
   }
 
-  return true;
+  // Keep sessionStorage in sync when tokens are refreshed
+  keycloak.onTokenExpired = () => {
+    keycloak.updateToken(30).then(() => {
+      sessionStorage.setItem("kc_token", keycloak.token!);
+      sessionStorage.setItem("kc_refreshToken", keycloak.refreshToken!);
+    });
+  };
+
+  return authenticated;
 }
 
 export async function getToken(): Promise<string> {
@@ -30,6 +43,12 @@ export function getUsername(): string {
   return keycloak.tokenParsed?.preferred_username ?? "";
 }
 
+export function getUserId(): string {
+  return keycloak.tokenParsed?.sub ?? "";
+}
+
 export function logout(): void {
+  sessionStorage.removeItem("kc_token");
+  sessionStorage.removeItem("kc_refreshToken");
   keycloak.logout({ redirectUri: window.location.origin });
 }

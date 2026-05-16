@@ -105,10 +105,11 @@ export default function Navbar({ page, setPage }: NavbarProps) {
               Panier
               {count > 0 && <span className="nav-badge-count">{count}</span>}
             </button>
+          </div>
 
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <span
               style={{
-                marginLeft: 16,
                 color: "var(--muted)",
                 fontSize: "0.9rem",
               }}
@@ -116,14 +117,16 @@ export default function Navbar({ page, setPage }: NavbarProps) {
               {getUsername()}
             </span>
             <button
-              className="nav-link"
               onClick={() => logout()}
               style={{
-                border: "none",
+                border: "1px solid var(--danger, #e74c3c)",
                 background: "none",
+                borderRadius: 4,
+                padding: "6px 12px",
                 cursor: "pointer",
                 fontFamily: "var(--font)",
                 color: "var(--danger, #e74c3c)",
+                fontSize: "0.85rem",
               }}
             >
               Deconnexion

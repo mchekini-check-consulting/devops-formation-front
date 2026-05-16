@@ -10,6 +10,8 @@ declare module "keycloak-js" {
     pkceMethod?: "S256";
     checkLoginIframe?: boolean;
     silentCheckSsoRedirectUri?: string;
+    token?: string;
+    refreshToken?: string;
   }
 
   export interface KeycloakLogoutOptions {
@@ -17,13 +19,16 @@ declare module "keycloak-js" {
   }
 
   export interface KeycloakTokenParsed {
+    sub?: string;
     preferred_username?: string;
     [key: string]: unknown;
   }
 
   export default class Keycloak {
     token?: string;
+    refreshToken?: string;
     tokenParsed?: KeycloakTokenParsed;
+    onTokenExpired?: () => void;
     constructor(config: KeycloakConfig);
     init(options: KeycloakInitOptions): Promise<boolean>;
     login(): Promise<void>;

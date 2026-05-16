@@ -1,6 +1,7 @@
 import React from "react";
 import { Page } from "../../App";
 import { useCart } from "../../lib/cart";
+import { getUsername, logout } from "../../services/keycloak";
 import ShopIcon from "../icons/ShopIcon";
 import GridIcon from "../icons/GridIcon";
 import BoxIcon from "../icons/BoxIcon";
@@ -64,7 +65,25 @@ export default function Sidebar({ page, setPage }: SidebarProps) {
 
       {/* Footer */}
       <div className="sidebar-footer">
-        <p>ShopMicro v1.0</p>
+        <p style={{ marginBottom: 8, fontSize: "0.85rem", color: "#333" }}>
+          {getUsername()}
+        </p>
+        <button
+          onClick={() => logout()}
+          style={{
+            width: "100%",
+            border: "1px solid var(--danger, #e74c3c)",
+            background: "none",
+            borderRadius: 4,
+            padding: "6px 12px",
+            cursor: "pointer",
+            fontFamily: "var(--font)",
+            color: "var(--danger, #e74c3c)",
+            fontSize: "0.85rem",
+          }}
+        >
+          Deconnexion
+        </button>
       </div>
     </aside>
   );
