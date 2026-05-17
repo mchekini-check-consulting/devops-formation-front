@@ -69,7 +69,7 @@ const Ctx = createContext<{
   count: number;
 } | null>(null);
 
-const _initialUserId = "user-" + Math.random().toString(36).slice(2, 8);
+const _initialUserId = "anonymous";
 setUserId(_initialUserId);
 
 export function CartProvider({ children }: { children: ReactNode }) {

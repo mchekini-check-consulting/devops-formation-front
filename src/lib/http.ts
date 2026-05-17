@@ -1,11 +1,23 @@
 import { API_CONFIG } from "./config";
+import { getToken } from "../services/keycloak";
 
 export const isDev =
   typeof window !== "undefined" && process.env.NODE_ENV === "development";
 
+function generateUUID(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  // Fallback for non-secure contexts (HTTP)
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
+  });
+}
+
 // Session-scoped trace context — one correlation ID per browser tab lifetime
 const _trace = {
-  correlationId: crypto.randomUUID(),
+  correlationId: generateUUID(),
   userId: "",
 };
 
@@ -32,9 +44,11 @@ export function buildUrl(service: "CATALOG" | "ORDERS" | "PAYMENT", path = "") {
 }
 
 export async function doFetch(url: string, opts?: RequestInit) {
+  const token = await getToken();
   const traceHeaders: Record<string, string> = {
     "X-Correlation-ID": _trace.correlationId,
     ...(_trace.userId ? { "X-User-ID": _trace.userId } : {}),
+    Authorization: `Bearer ${token}`,
   };
 
   const res = await fetch(url, {

@@ -1,6 +1,7 @@
 import React from "react";
 import { Page } from "../../App";
 import { useCart } from "../../lib/cart";
+import { getUsername, logout } from "../../services/keycloak";
 import ShopIcon from "../icons/ShopIcon";
 import GridIcon from "../icons/GridIcon";
 import BoxIcon from "../icons/BoxIcon";
@@ -103,6 +104,32 @@ export default function Navbar({ page, setPage }: NavbarProps) {
               <CardIcon />
               Panier
               {count > 0 && <span className="nav-badge-count">{count}</span>}
+            </button>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <span
+              style={{
+                color: "var(--muted)",
+                fontSize: "0.9rem",
+              }}
+            >
+              {getUsername()}
+            </span>
+            <button
+              onClick={() => logout()}
+              style={{
+                border: "1px solid var(--danger, #e74c3c)",
+                background: "none",
+                borderRadius: 4,
+                padding: "6px 12px",
+                cursor: "pointer",
+                fontFamily: "var(--font)",
+                color: "var(--danger, #e74c3c)",
+                fontSize: "0.85rem",
+              }}
+            >
+              Deconnexion
             </button>
           </div>
         </div>
