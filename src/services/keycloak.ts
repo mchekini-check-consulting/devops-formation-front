@@ -10,17 +10,20 @@ const keycloak = new Keycloak({
 export async function initKeycloak(): Promise<boolean> {
   const token = sessionStorage.getItem("kc_token") || undefined;
   const refreshToken = sessionStorage.getItem("kc_refreshToken") || undefined;
+  const idToken = sessionStorage.getItem("kc_idToken") || undefined;
 
   const authenticated = await keycloak.init({
     onLoad: "login-required",
     checkLoginIframe: false,
     token,
     refreshToken,
+    idToken
   });
 
   if (authenticated) {
     sessionStorage.setItem("kc_token", keycloak.token!);
     sessionStorage.setItem("kc_refreshToken", keycloak.refreshToken!);
+    sessionStorage.setItem("kc_idToken", keycloak.idToken!);
   }
 
   // Keep sessionStorage in sync when tokens are refreshed
@@ -28,6 +31,7 @@ export async function initKeycloak(): Promise<boolean> {
     keycloak.updateToken(30).then(() => {
       sessionStorage.setItem("kc_token", keycloak.token!);
       sessionStorage.setItem("kc_refreshToken", keycloak.refreshToken!);
+      sessionStorage.setItem("kc_idToken", keycloak.idToken!);
     });
   };
 
@@ -50,5 +54,6 @@ export function getUserId(): string {
 export function logout(): void {
   sessionStorage.removeItem("kc_token");
   sessionStorage.removeItem("kc_refreshToken");
+  sessionStorage.removeItem("kc_idToken");
   keycloak.logout({ redirectUri: window.location.origin });
 }
