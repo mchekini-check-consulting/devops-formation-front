@@ -1,9 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
-import "./lib/crypto-polyfill";
-import { initKeycloak, getUserId } from "./services/keycloak";
-import { setUserId } from "./lib/http";
+import { initKeycloak } from "./services/keycloak";
 
 const root = ReactDOM.createRoot(
   document.getElementById("root") as HTMLElement
@@ -12,7 +10,6 @@ const root = ReactDOM.createRoot(
 initKeycloak()
   .then((authenticated) => {
     if (authenticated) {
-      setUserId(getUserId());
       root.render(
         <React.StrictMode>
           <App />

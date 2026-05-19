@@ -12,6 +12,7 @@ declare module "keycloak-js" {
     silentCheckSsoRedirectUri?: string;
     token?: string;
     refreshToken?: string;
+    idToken?: string;
   }
 
   export interface KeycloakLogoutOptions {
@@ -27,6 +28,7 @@ declare module "keycloak-js" {
   export default class Keycloak {
     token?: string;
     refreshToken?: string;
+    idToken?: string;
     tokenParsed?: KeycloakTokenParsed;
     onTokenExpired?: () => void;
     constructor(config: KeycloakConfig);

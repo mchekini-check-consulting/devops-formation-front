@@ -16,14 +16,7 @@ function generateUUID(): string {
 }
 
 // Session-scoped trace context — one correlation ID per browser tab lifetime
-const _trace = {
-  correlationId: generateUUID(),
-  userId: "",
-};
-
-export function setUserId(userId: string) {
-  _trace.userId = userId;
-}
+const _correlationId = generateUUID();
 
 export function buildUrl(service: "CATALOG" | "ORDERS" | "PAYMENT", path = "") {
   if (isDev) {
@@ -46,8 +39,7 @@ export function buildUrl(service: "CATALOG" | "ORDERS" | "PAYMENT", path = "") {
 export async function doFetch(url: string, opts?: RequestInit) {
   const token = await getToken();
   const traceHeaders: Record<string, string> = {
-    "X-Correlation-ID": _trace.correlationId,
-    ...(_trace.userId ? { "X-User-ID": _trace.userId } : {}),
+    "X-Correlation-ID": _correlationId,
     Authorization: `Bearer ${token}`,
   };
 

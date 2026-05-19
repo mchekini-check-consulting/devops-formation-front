@@ -1,7 +1,5 @@
 import React, { createContext, useContext, useReducer, ReactNode } from "react";
 import { Product } from "../types/api";
-import { setUserId } from "./http";
-
 export interface CartItem {
   product: Product;
   quantity: number;
@@ -69,13 +67,10 @@ const Ctx = createContext<{
   count: number;
 } | null>(null);
 
-const _initialUserId = "anonymous";
-setUserId(_initialUserId);
-
 export function CartProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, {
     items: [],
-    userId: _initialUserId,
+    userId: "",
   });
   const total = state.items.reduce(
     (s, i) => s + i.product.price * i.quantity,
