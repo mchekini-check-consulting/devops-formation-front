@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { catalogService, ApiError } from "../../lib/api";
+import { catalogService, ApiError, isRateLimitError } from "../../lib/api";
 import type { Product, CreateProductPayload } from "../../types/api";
 import { CATEGORIES } from "../../lib/constants";
 import { AlertIcon, BoxIcon, CrossIcon } from "../icons";
@@ -28,8 +28,10 @@ export default function AdminProductsPage() {
       const data = await catalogService.getProducts();
       setProducts(data);
     } catch (err: any) {
-      setError("Impossible de charger la liste des produits");
-      console.error(err);
+      if (!isRateLimitError(err)) {
+        setError("Impossible de charger la liste des produits");
+        console.error(err);
+      }
     } finally {
       setLoading(false);
     }
@@ -57,7 +59,9 @@ export default function AdminProductsPage() {
       setCategory("Informatique");
       setDescription("");
     } catch (err: any) {
-      if (err instanceof ApiError && err.payload) {
+      if (isRateLimitError(err)) {
+        // Handled by global banner
+      } else if (err instanceof ApiError && err.payload) {
         setError(
           "Erreur API: " + (err.payload.message || JSON.stringify(err.payload))
         );
@@ -74,8 +78,10 @@ export default function AdminProductsPage() {
       await catalogService.deleteProduct(id);
       setProducts((s) => s.filter((p) => p.id !== id));
     } catch (err: any) {
-      setError("Erreur lors de la suppression");
-      console.error(err);
+      if (!isRateLimitError(err)) {
+        setError("Erreur lors de la suppression");
+        console.error(err);
+      }
     }
   }
 

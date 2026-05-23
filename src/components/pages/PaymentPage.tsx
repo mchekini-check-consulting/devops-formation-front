@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { paymentService, API_CONFIG } from "../../lib/api";
+import { paymentService, isRateLimitError, API_CONFIG } from "../../lib/api";
 import {
   AlertIcon,
   CreditIcon,
@@ -33,15 +33,17 @@ export default function PaymentPage() {
     paymentService
       .getPayments()
       .then(setPayments)
-      .catch(() => {
-        const payUrl =
-          typeof window !== "undefined" &&
-          process.env.NODE_ENV === "development"
-            ? "/api/payments"
-            : API_CONFIG.PAYMENT;
-        setError(
-          `Impossible de charger les paiements. Vérifiez que le payment-service est actif (${payUrl}).`
-        );
+      .catch((err) => {
+        if (!isRateLimitError(err)) {
+          const payUrl =
+            typeof window !== "undefined" &&
+            process.env.NODE_ENV === "development"
+              ? "/api/payments"
+              : API_CONFIG.PAYMENT;
+          setError(
+            `Impossible de charger les paiements. Vérifiez que le payment-service est actif (${payUrl}).`
+          );
+        }
       })
       .finally(() => setLoading(false));
   }, []);

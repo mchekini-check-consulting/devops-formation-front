@@ -25,6 +25,10 @@ export class ApiError extends Error {
   }
 }
 
+export function isRateLimitError(err: unknown): boolean {
+  return err instanceof ApiError && err.status === 429;
+}
+
 // ── Catalog Service ───────────────────────────────────────────
 
 export const catalogService = {
