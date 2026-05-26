@@ -3,6 +3,7 @@ import { catalogService, ApiError, isRateLimitError } from "../../lib/api";
 import type { Product, CreateProductPayload } from "../../types/api";
 import { CATEGORIES } from "../../lib/constants";
 import { AlertIcon, BoxIcon, CrossIcon } from "../icons";
+import { hasRole } from "../../services/keycloak";
 
 function fmt(n: number) {
   return new Intl.NumberFormat("fr-FR", {
@@ -21,6 +22,8 @@ export default function AdminProductsPage() {
   const [category, setCategory] = useState("Informatique");
   const [description, setDescription] = useState("");
 
+  const isAdmin = hasRole("admin");
+
   const load = async () => {
     setLoading(true);
     setError(null);
@@ -38,8 +41,17 @@ export default function AdminProductsPage() {
   };
 
   useEffect(() => {
-    load();
-  }, []);
+    if (isAdmin) load();
+  }, [isAdmin]);
+
+  if (!isAdmin) {
+    return (
+      <div className="page-header">
+        <h1>Accès refusé</h1>
+        <p>Vous n'avez pas les droits nécessaires pour accéder à cette page.</p>
+      </div>
+    );
+  }
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();

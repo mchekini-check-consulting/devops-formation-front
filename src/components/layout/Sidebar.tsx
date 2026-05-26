@@ -1,7 +1,7 @@
 import React from "react";
 import { Page } from "../../App";
 import { useCart } from "../../lib/cart";
-import { getUsername, logout } from "../../services/keycloak";
+import { getUsername, logout, hasRole } from "../../services/keycloak";
 import ShopIcon from "../icons/ShopIcon";
 import GridIcon from "../icons/GridIcon";
 import BoxIcon from "../icons/BoxIcon";
@@ -45,6 +45,7 @@ export default function Sidebar({ page, setPage }: SidebarProps) {
       {/* Navigation */}
       <nav className="sidebar-nav">
         {navItems.map((item) => {
+          if (item.page === "admin" && !hasRole("admin")) return null;
           const isActive = page === item.page;
           const Icon = item.icon;
           return (

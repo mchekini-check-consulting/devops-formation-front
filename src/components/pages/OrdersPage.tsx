@@ -83,10 +83,9 @@ function OrderRow({ order, isNew, userId, productMap }: OrderRowProps) {
     } catch (err) {
       if (isRateLimitError(err)) {
         // Handled by global banner
-      } else if (err instanceof ApiError && err.status === 403 && err.payload?.message) {
-        const reason = err.payload.reason ? ` (${err.payload.reason})` : "";
+      } else if (err instanceof ApiError && err.status === 403) {
         setError(
-          `Paiement bloqué : ${err.payload.message}${reason}`
+          "Paiement bloqué : trop de tentatives de paiement en peu de temps. Veuillez réessayer plus tard."
         );
       } else {
         const payUrl =
