@@ -84,9 +84,14 @@ function OrderRow({ order, isNew, userId, productMap }: OrderRowProps) {
       if (isRateLimitError(err)) {
         // Handled by global banner
       } else if (err instanceof ApiError && err.status === 403) {
-        setError(
-          "Paiement bloqué : trop de tentatives de paiement en peu de temps. Veuillez réessayer plus tard."
-        );
+        const reason = err.payload?.reason ?? "";
+        let msg = "Paiement bloqué par le système de sécurité.";
+        if (reason.startsWith("velocity_exceeded")) {
+          msg = "Paiement bloqué : trop de tentatives en peu de temps. Veuillez réessayer plus tard.";
+        } else if (reason.startsWith("amount_exceeded")) {
+          msg = "Paiement bloqué : le montant dépasse la limite autorisée.";
+        }
+        setError(msg);
       } else {
         const payUrl =
           typeof window !== "undefined" && process.env.NODE_ENV === "development"
