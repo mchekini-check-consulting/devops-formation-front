@@ -3,6 +3,8 @@ import {
   orderService,
   paymentService,
   catalogService,
+  ApiError,
+  isRateLimitError,
   API_CONFIG,
 } from "../../lib/api";
 import type { Order, Payment } from "../../types/api";
@@ -79,11 +81,24 @@ function OrderRow({ order, isNew, userId, productMap }: OrderRowProps) {
         setError("Paiement reçu mais impossible de mettre à jour la commande.");
       }
     } catch (err) {
-      const payUrl =
-        typeof window !== "undefined" && process.env.NODE_ENV === "development"
-          ? "/api/payments"
-          : API_CONFIG.PAYMENT;
-      setError(`Erreur : payment-service indisponible (${payUrl}).`);
+      if (isRateLimitError(err)) {
+        // Handled by global banner
+      } else if (err instanceof ApiError && err.status === 403) {
+        const reason = err.payload?.reason ?? "";
+        let msg = "Paiement bloqué par le système de sécurité.";
+        if (reason.startsWith("velocity_exceeded")) {
+          msg = "Paiement bloqué : trop de tentatives en peu de temps. Veuillez réessayer plus tard.";
+        } else if (reason.startsWith("amount_exceeded")) {
+          msg = "Paiement bloqué : le montant dépasse la limite autorisée.";
+        }
+        setError(msg);
+      } else {
+        const payUrl =
+          typeof window !== "undefined" && process.env.NODE_ENV === "development"
+            ? "/api/payments"
+            : API_CONFIG.PAYMENT;
+        setError(`Erreur : payment-service indisponible (${payUrl}).`);
+      }
     } finally {
       setPaying(false);
     }
@@ -270,11 +285,13 @@ export default function OrdersPage({ highlightOrderId }: Props) {
         products.forEach((p) => (map[p.id] = p.name));
         setCatalogMap(map);
       })
-      .catch(() =>
-        setError(
-          "Impossible de charger les commandes. Vérifiez que l'order-service est actif."
-        )
-      )
+      .catch((err) => {
+        if (!isRateLimitError(err)) {
+          setError(
+            "Impossible de charger les commandes. Vérifiez que l'order-service est actif."
+          );
+        }
+      })
       .finally(() => setLoading(false));
   }, []);
 

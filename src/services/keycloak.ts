@@ -51,6 +51,11 @@ export function getUserId(): string {
   return keycloak.tokenParsed?.sub ?? "";
 }
 
+export function hasRole(role: string): boolean {
+  const roles = (keycloak.tokenParsed as any)?.realm_access?.roles as string[] | undefined;
+  return roles?.includes(role) ?? false;
+}
+
 export function logout(): void {
   sessionStorage.removeItem("kc_token");
   sessionStorage.removeItem("kc_refreshToken");

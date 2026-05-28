@@ -10,7 +10,6 @@ const root = ReactDOM.createRoot(
 initKeycloak()
   .then((authenticated) => {
     if (authenticated) {
-      setUserId(getUserId());
       root.render(
         <React.StrictMode>
           <App />

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useCart } from "../../lib/cart";
-import { orderService } from "../../lib/api";
+import { orderService, isRateLimitError } from "../../lib/api";
 import CardIcon from "../icons/CardIcon";
 import SpinnerIcon from "../icons/SpinnerIcon";
 import CrossIcon from "../icons/CrossIcon";
@@ -36,10 +36,12 @@ export default function CartPage({ goToOrders }: Props) {
       });
       dispatch({ type: "CLEAR" });
       goToOrders(order.id);
-    } catch {
-      setError(
-        "Erreur lors de la création de la commande. Vérifiez que l'order-service est actif sur le port 8000."
-      );
+    } catch (err) {
+      if (!isRateLimitError(err)) {
+        setError(
+          "Erreur lors de la création de la commande. Vérifiez que l'order-service est actif sur le port 8000."
+        );
+      }
     } finally {
       setLoading(false);
     }

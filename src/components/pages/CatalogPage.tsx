@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { catalogService } from "../../lib/api";
+import { catalogService, ApiError, isRateLimitError } from "../../lib/api";
 import type { Product } from "../../types/api";
-import { ApiError } from "../../lib/api";
 import { CATEGORIES } from "../../lib/constants";
 import { useCart } from "../../lib/cart";
 import SearchIcon from "../icons/SearchIcon";
@@ -174,7 +173,9 @@ export default function CatalogPage() {
         });
         setProducts(data);
       } catch (err: any) {
-        if (err instanceof ApiError && err.payload) {
+        if (isRateLimitError(err)) {
+          // Handled by global banner
+        } else if (err instanceof ApiError && err.payload) {
           const payload = err.payload;
           if (Array.isArray(payload)) {
             payload.forEach((p: any) =>
