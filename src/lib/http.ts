@@ -59,8 +59,10 @@ export async function doFetch(url: string, opts?: RequestInit) {
   const traceHeaders: Record<string, string> = {
     "X-Correlation-ID": _correlationId,
     traceparent: buildTraceparent(_traceId),
-    Authorization: `Bearer ${token}`,
   };
+  if (token) {
+    traceHeaders["Authorization"] = `Bearer ${token}`;
+  }
 
   let res: Response;
   try {

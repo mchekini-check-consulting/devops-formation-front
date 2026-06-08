@@ -14,15 +14,16 @@ if [ -f "$TEMPLATE" ]; then
   : "${KEYCLOAK_URL:=http://localhost:8080}"
   : "${KEYCLOAK_REALM:=ecommerce}"
   : "${KEYCLOAK_CLIENT_ID:=ecommerce-front}"
+  : "${AUTH_ENABLED:=true}"
 
   CATALOG=${CATALOG:-$REACT_APP_CATALOG}
   ORDERS=${ORDERS:-$REACT_APP_ORDERS}
   PAYMENT=${PAYMENT:-$REACT_APP_PAYMENT}
 
-  export CATALOG ORDERS PAYMENT KEYCLOAK_URL KEYCLOAK_REALM KEYCLOAK_CLIENT_ID
+  export CATALOG ORDERS PAYMENT KEYCLOAK_URL KEYCLOAK_REALM KEYCLOAK_CLIENT_ID AUTH_ENABLED
 
   # Use envsubst (from gettext) to substitute ${VAR} placeholders in the template
-  envsubst '\$CATALOG \$ORDERS \$PAYMENT \$KEYCLOAK_URL \$KEYCLOAK_REALM \$KEYCLOAK_CLIENT_ID' < "$TEMPLATE" > "$OUT"
+  envsubst '\$CATALOG \$ORDERS \$PAYMENT \$KEYCLOAK_URL \$KEYCLOAK_REALM \$KEYCLOAK_CLIENT_ID \$AUTH_ENABLED' < "$TEMPLATE" > "$OUT"
 else
   echo "No config template found at $TEMPLATE, skipping runtime config generation"
 fi
