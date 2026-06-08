@@ -23,3 +23,7 @@ export const KEYCLOAK_CONFIG = {
   REALM: envOr("KEYCLOAK_REALM", "ecommerce"),
   CLIENT_ID: envOr("KEYCLOAK_CLIENT_ID", "ecommerce-front"),
 };
+
+export function isAuthEnabled(): boolean {
+  return envOr("AUTH_ENABLED", "true") !== "false";
+}

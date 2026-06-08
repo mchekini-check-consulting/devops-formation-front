@@ -1,5 +1,5 @@
 import Keycloak from "keycloak-js";
-import { KEYCLOAK_CONFIG } from "../lib/config";
+import { KEYCLOAK_CONFIG, isAuthEnabled } from "../lib/config";
 
 const keycloak = new Keycloak({
   url: KEYCLOAK_CONFIG.URL,
@@ -8,6 +8,10 @@ const keycloak = new Keycloak({
 });
 
 export async function initKeycloak(): Promise<boolean> {
+  if (!isAuthEnabled()) {
+    return true;
+  }
+
   const token = sessionStorage.getItem("kc_token") || undefined;
   const refreshToken = sessionStorage.getItem("kc_refreshToken") || undefined;
   const idToken = sessionStorage.getItem("kc_idToken") || undefined;
@@ -39,24 +43,39 @@ export async function initKeycloak(): Promise<boolean> {
 }
 
 export async function getToken(): Promise<string> {
+  if (!isAuthEnabled()) {
+    return "";
+  }
   await keycloak.updateToken(30);
   return keycloak.token!;
 }
 
 export function getUsername(): string {
+  if (!isAuthEnabled()) {
+    return "anonymous";
+  }
   return keycloak.tokenParsed?.preferred_username ?? "";
 }
 
 export function getUserId(): string {
+  if (!isAuthEnabled()) {
+    return "anonymous";
+  }
   return keycloak.tokenParsed?.sub ?? "";
 }
 
 export function hasRole(role: string): boolean {
+  if (!isAuthEnabled()) {
+    return true;
+  }
   const roles = (keycloak.tokenParsed as any)?.realm_access?.roles as string[] | undefined;
   return roles?.includes(role) ?? false;
 }
 
 export function logout(): void {
+  if (!isAuthEnabled()) {
+    return;
+  }
   sessionStorage.removeItem("kc_token");
   sessionStorage.removeItem("kc_refreshToken");
   sessionStorage.removeItem("kc_idToken");
