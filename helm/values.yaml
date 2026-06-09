@@ -96,3 +96,7 @@ ingress:
       service:
         name: front
         port: 80
+netpolicies:
+  ingresssources: ingress-nginx
+  ingressdestports: 80
+  ingressprotocol: TCP
