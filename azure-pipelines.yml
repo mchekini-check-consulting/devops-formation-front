@@ -116,6 +116,8 @@ stages:
 
         chmod +x dependency-check/bin/dependency-check.sh
 
+        mkdir -p dependency-report
+
         ./dependency-check/bin/dependency-check.sh \
           --project "$(Build.Repository.Name)" \
           --scan "$(Build.SourcesDirectory)/src" \
