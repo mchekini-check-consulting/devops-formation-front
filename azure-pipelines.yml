@@ -98,16 +98,49 @@ stages:
         ArtifactName: 'coverage-report'
 
 # ─────────────────────────────────────────────
-# STAGE 4 : OWASP Dependency Check (CLI)
+# STAGE 4 : Mutation Tests (Stryker)
+# ─────────────────────────────────────────────
+- stage: MutationTests
+  displayName: 'Mutation Tests'
+  dependsOn: UnitTests
+  jobs:
+  - job: MutationTestsJob
+    displayName: 'Run Mutation Tests'
+    steps:
+    - task: NodeTool@0
+      displayName: 'Use Node.js 20.x'
+      inputs:
+        versionSpec: '20.x'
+
+    - task: Npm@1
+      displayName: 'npm install'
+      inputs:
+        command: install
+
+    - task: Npm@1
+      displayName: 'Stryker - Mutation Testing'
+      inputs:
+        command: custom
+        customCommand: 'run mutation-test'
+
+    - task: PublishBuildArtifacts@1
+      displayName: 'Artifact - stryker-report'
+      condition: always()
+      inputs:
+        PathtoPublish: '$(System.DefaultWorkingDirectory)/reports/mutation/mutation.html'
+        ArtifactName: 'mutation-test-report'
+
+# ─────────────────────────────────────────────
+# STAGE 5 : OWASP Dependency Check (CLI)
 # ─────────────────────────────────────────────
 # Désactivé – nécessite la tâche marketplace dependency-check-build-task@6
 
 # ─────────────────────────────────────────────
-# STAGE 5 : SonarQube (CLI version)
+# STAGE 6 : SonarQube (CLI version)
 # ─────────────────────────────────────────────
 - stage: Sonar
   displayName: 'SonarQube Analysis'
-  dependsOn: UnitTests
+  dependsOn: MutationTests
   jobs:
   - job: SonarJob
     displayName: 'Sonar Scan'
@@ -141,55 +174,17 @@ stages:
       displayName: 'SonarQube Scan'
 
 # ─────────────────────────────────────────────
-# STAGE 6 : Build
-# ─────────────────────────────────────────────
-- stage: Build
-  displayName: 'Build'
-  dependsOn: Sonar
-  jobs:
-  - job: BuildJob
-    displayName: 'Npm Build'
-    steps:
-    - task: NodeTool@0
-      displayName: 'Use Node.js 20.x'
-      inputs:
-        versionSpec: '20.x'
-
-    - task: Npm@1
-      displayName: 'npm install'
-      inputs:
-        command: install
-
-    - task: Npm@1
-      displayName: 'npm run build'
-      inputs:
-        command: custom
-        customCommand: 'run build'
-
-    - task: PublishBuildArtifacts@1
-      displayName: 'Artifact - build'
-      inputs:
-        PathtoPublish: '$(System.DefaultWorkingDirectory)/build'
-        ArtifactName: 'build'
-
-# ─────────────────────────────────────────────
-# STAGE 7 : Docker Build
+# STAGE 6 : Docker Build
 # ─────────────────────────────────────────────
 - stage: DockerBuild
   displayName: 'Docker Build'
-  dependsOn: Build
+  dependsOn: Sonar
   variables:
     IMAGE: crformation.azurecr.io/devops-formation-frontend:$(Build.BuildId)
   jobs:
   - job: DockerBuildJob
     displayName: 'Build & Save Image'
     steps:
-    - task: DownloadBuildArtifacts@1
-      displayName: 'Download build artifact'
-      inputs:
-        artifactName: 'build'
-        downloadPath: '$(System.DefaultWorkingDirectory)/build'
-
     - task: AzureCLI@2
       displayName: 'Docker Build → save tar'
       inputs:

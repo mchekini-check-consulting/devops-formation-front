@@ -18,6 +18,7 @@
     "build": "react-scripts build",
     "test": "react-scripts test --ci --coverage --watchAll=false --reporters=default --reporters=jest-junit",
     "lint": "eslint src/ --max-warnings 0",
+    "mutation-test": "stryker run",
     "eject": "react-scripts eject",
     "commit": "git-cz",
     "prepare": "husky"
@@ -25,6 +26,9 @@
   "devDependencies": {
     "@commitlint/cli": "^21.0.1",
     "@commitlint/config-conventional": "^21.0.1",
+    "@stryker-mutator/core": "^9.6.1",
+    "@stryker-mutator/jest-runner": "^9.6.1",
+    "@stryker-mutator/typescript-checker": "^9.6.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
