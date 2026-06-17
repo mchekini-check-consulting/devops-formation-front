@@ -26,9 +26,18 @@ stages:
       fetchDepth: 0
 
     - script: |
-        curl -sSfL https://raw.githubusercontent.com/gitleaks/gitleaks/master/install.sh | bash
-        gitleaks detect --source . --verbose --exit-code 1
-      displayName: 'Run Gitleaks (CLI)'
+        set -e
+
+        GITLEAKS_VERSION="8.18.0"
+
+        wget -q https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz
+
+        tar -xzf gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz
+
+        chmod +x gitleaks
+
+        ./gitleaks detect --source . --verbose --exit-code 1
+      displayName: 'Run Gitleaks (fixed install)'
 
 # ─────────────────────────────────────────────
 # STAGE 2 : Install & Lint
