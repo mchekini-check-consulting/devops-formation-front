@@ -15,44 +15,38 @@ variables:
 stages:
 
 # ─────────────────────────────────────────────
-# STAGE 1 : Gitleaks (Secret Scanning)
+# STAGE 1 : Gitleaks (CLI)
 # ─────────────────────────────────────────────
 - stage: Gitleaks
   displayName: 'Gitleaks – Secret Scanning'
   jobs:
   - job: GitleaksJob
-    displayName: 'Run Gitleaks'
     steps:
     - checkout: self
       fetchDepth: 0
 
-    - task: Gitleaks@2
-      displayName: 'Gitleaks - Scan secrets'
-      inputs:
-        scanMode: 'all'
+    - script: |
+        curl -sSfL https://raw.githubusercontent.com/gitleaks/gitleaks/master/install.sh | bash
+        gitleaks detect --source . --verbose --exit-code 1
+      displayName: 'Run Gitleaks (CLI)'
 
 # ─────────────────────────────────────────────
 # STAGE 2 : Install & Lint
 # ─────────────────────────────────────────────
 - stage: Lint
-  displayName: 'Lint'
   dependsOn: Gitleaks
   jobs:
   - job: LintJob
-    displayName: 'Install & Lint'
     steps:
     - task: NodeTool@0
-      displayName: 'Use Node.js 20.x'
       inputs:
         versionSpec: '20.x'
 
     - task: Npm@1
-      displayName: 'npm install'
       inputs:
         command: install
 
     - task: Npm@1
-      displayName: 'npm run lint'
       inputs:
         command: custom
         customCommand: 'run lint'
@@ -61,24 +55,19 @@ stages:
 # STAGE 3 : Unit Tests
 # ─────────────────────────────────────────────
 - stage: UnitTests
-  displayName: 'Unit Tests'
   dependsOn: Lint
   jobs:
   - job: UnitTestsJob
-    displayName: 'Run Unit Tests'
     steps:
     - task: NodeTool@0
-      displayName: 'Use Node.js 20.x'
       inputs:
         versionSpec: '20.x'
 
     - task: Npm@1
-      displayName: 'npm install'
       inputs:
         command: install
 
     - task: Npm@1
-      displayName: 'npm test (Jest + JUnit)'
       inputs:
         command: custom
         customCommand: 'test -- --ci --reporters=default --reporters=jest-junit'
@@ -87,244 +76,148 @@ stages:
         JEST_JUNIT_OUTPUT_DIR: '$(System.DefaultWorkingDirectory)/test-results'
 
     - task: PublishTestResults@2
-      displayName: 'Publish Test Results'
       condition: always()
       inputs:
         testResultsFormat: JUnit
         testResultsFiles: '**/test-results/junit.xml'
-        mergeTestResults: true
-        testRunTitle: 'Unit Tests'
 
     - task: PublishBuildArtifacts@1
-      displayName: 'Artifact - test-results'
-      condition: always()
-      inputs:
-        PathtoPublish: '$(System.DefaultWorkingDirectory)/test-results'
-        ArtifactName: 'unit-test-reports'
-
-    - task: PublishBuildArtifacts@1
-      displayName: 'Artifact - coverage'
       condition: always()
       inputs:
         PathtoPublish: '$(System.DefaultWorkingDirectory)/coverage'
         ArtifactName: 'coverage-report'
 
 # ─────────────────────────────────────────────
-# STAGE 4 : OWASP Dependency Check
+# STAGE 4 : OWASP Dependency Check (CLI)
 # ─────────────────────────────────────────────
 - stage: OWASP
-  displayName: 'OWASP Dependency Check'
   dependsOn: UnitTests
   jobs:
   - job: OWASPJob
-    displayName: 'Dependency Check'
     steps:
-    - task: NodeTool@0
-      displayName: 'Use Node.js 20.x'
-      inputs:
-        versionSpec: '20.x'
+    - script: |
+        wget https://github.com/dependency-check/DependencyCheck/releases/latest/download/dependency-check-12.1.0-release.zip
+        unzip dependency-check-*.zip
 
-    - task: Npm@1
-      displayName: 'npm install'
-      inputs:
-        command: install
-
-    - task: dependency-check-build-task@6
-      displayName: 'OWASP DC - Scan node_modules'
-      inputs:
-        projectName: '$(Build.Repository.Name)'
-        scanPath: '$(Build.SourcesDirectory)'
-        format: 'HTML,JSON'
-        failOnCVSS: '7'
+        ./dependency-check/bin/dependency-check.sh \
+          --project "$(Build.Repository.Name)" \
+          --scan "$(Build.SourcesDirectory)" \
+          --format HTML \
+          --format JSON \
+          --out dependency-report \
+          --failOnCVSS 7
+      displayName: 'OWASP Dependency Check (CLI)'
 
     - task: PublishBuildArtifacts@1
-      displayName: 'Artifact - OWASP DC report'
       condition: always()
       inputs:
-        PathtoPublish: '$(Common.TestResultsDirectory)/dependency-check'
-        ArtifactName: 'owasp-dc-report'
+        PathtoPublish: 'dependency-report'
+        ArtifactName: 'owasp-report'
 
 # ─────────────────────────────────────────────
-# STAGE 5 : SonarQube
+# STAGE 5 : SonarQube (CLI version)
 # ─────────────────────────────────────────────
 - stage: Sonar
-  displayName: 'SonarQube Analysis'
   dependsOn: OWASP
   jobs:
   - job: SonarJob
-    displayName: 'Sonar Scan'
     steps:
     - task: NodeTool@0
-      displayName: 'Use Node.js 20.x'
       inputs:
         versionSpec: '20.x'
 
-    - task: DownloadBuildArtifacts@1
-      displayName: 'Download coverage report'
-      inputs:
-        artifactName: 'coverage-report'
-        downloadPath: '$(Pipeline.Workspace)/coverage'
-
     - task: Npm@1
-      displayName: 'npm install'
       inputs:
         command: install
 
-    - task: SonarQubePrepare@6
-      displayName: 'SonarQube - Prepare'
-      inputs:
-        SonarQube: 'SonarQubeServiceConnection'
-        scannerMode: 'CLI'
-        configMode: 'manual'
-        cliProjectKey: '$(SONAR_PROJECT_KEY)'
-        cliSources: 'src'
-        extraProperties: |
-          sonar.javascript.lcov.reportPaths=$(Pipeline.Workspace)/coverage/coverage-report/lcov.info
+    - script: |
+        npm install -g sonarqube-scanner
 
-    - task: SonarQubeAnalyze@6
-      displayName: 'SonarQube - Analyse'
-
-    - task: SonarQubePublish@6
-      displayName: 'SonarQube - Publish Quality Gate'
-      inputs:
-        pollingTimeoutSec: '300'
+        sonar-scanner \
+          -Dsonar.projectKey=$(SONAR_PROJECT_KEY) \
+          -Dsonar.sources=src \
+          -Dsonar.host.url=$(SONAR_HOST_URL) \
+          -Dsonar.login=$(SONAR_TOKEN) \
+          -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
+      displayName: 'SonarQube Scan (CLI)'
 
 # ─────────────────────────────────────────────
 # STAGE 6 : Build
 # ─────────────────────────────────────────────
 - stage: Build
-  displayName: 'Build'
   dependsOn: Sonar
   jobs:
   - job: BuildJob
-    displayName: 'npm run build'
     steps:
     - task: NodeTool@0
-      displayName: 'Use Node.js 20.x'
       inputs:
         versionSpec: '20.x'
 
     - task: Npm@1
-      displayName: 'npm install'
       inputs:
         command: install
 
     - task: Npm@1
-      displayName: 'npm run build'
       inputs:
         command: custom
         customCommand: 'run build'
 
     - task: PublishBuildArtifacts@1
-      displayName: 'Artifact - build'
       inputs:
-        PathtoPublish: '$(System.DefaultWorkingDirectory)/build'
+        PathtoPublish: 'build'
         ArtifactName: 'build'
 
 # ─────────────────────────────────────────────
 # STAGE 7 : Docker Build
 # ─────────────────────────────────────────────
 - stage: DockerBuild
-  displayName: 'Docker Build'
   dependsOn: Build
   variables:
     IMAGE: crformation.azurecr.io/devops-formation-frontend:$(Build.BuildId)
   jobs:
   - job: DockerBuildJob
-    displayName: 'Build & Save Image'
     steps:
-    - task: AzureCLI@2
-      displayName: 'Docker Build → save tar'
-      inputs:
-        azureSubscription: 'sc-formation-devops-acr'
-        scriptType: bash
-        scriptLocation: inlineScript
-        inlineScript: |
-          az acr login --name crformation
-          docker build -t $(IMAGE) .
-          docker save $(IMAGE) -o $(Build.ArtifactStagingDirectory)/image.tar
+    - script: |
+        az acr login --name crformation
+        docker build -t $(IMAGE) .
+        docker save $(IMAGE) -o $(Build.ArtifactStagingDirectory)/image.tar
+      displayName: 'Docker build'
 
     - task: PublishBuildArtifacts@1
-      displayName: 'Artifact - image.tar'
       inputs:
         PathtoPublish: '$(Build.ArtifactStagingDirectory)/image.tar'
         ArtifactName: 'docker-image'
 
 # ─────────────────────────────────────────────
-# STAGE 8 : Trivy Security Scan
+# STAGE 8 : Trivy
 # ─────────────────────────────────────────────
 - stage: Trivy
-  displayName: 'Trivy Security Scan'
   dependsOn: DockerBuild
   variables:
     IMAGE: crformation.azurecr.io/devops-formation-frontend:$(Build.BuildId)
   jobs:
   - job: TrivyJob
-    displayName: 'Trivy Scan'
     steps:
-    - task: DownloadBuildArtifacts@1
-      displayName: 'Download image.tar'
-      inputs:
-        artifactName: 'docker-image'
-        downloadPath: '$(Build.ArtifactStagingDirectory)'
-
-    - script: docker load -i $(Build.ArtifactStagingDirectory)/docker-image/image.tar
-      displayName: 'Docker Load Image'
-
     - script: |
-        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
-          | sh -s -- -b /usr/local/bin
-        trivy image \
-          --exit-code 1 \
-          --severity HIGH,CRITICAL \
-          --no-progress \
-          --format table \
-          $(IMAGE)
-      displayName: 'Trivy - Scan (fail on HIGH/CRITICAL)'
+        docker load -i $(Build.ArtifactStagingDirectory)/docker-image/image.tar
 
-    - script: |
-        trivy image \
-          --exit-code 0 \
-          --severity HIGH,CRITICAL \
-          --no-progress \
-          --format json \
-          --output $(Build.ArtifactStagingDirectory)/trivy-report.json \
-          $(IMAGE)
-      displayName: 'Trivy - Export JSON Report'
-      condition: always()
+        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
 
-    - task: PublishBuildArtifacts@1
-      displayName: 'Artifact - trivy-report.json'
-      condition: always()
-      inputs:
-        PathtoPublish: '$(Build.ArtifactStagingDirectory)/trivy-report.json'
-        ArtifactName: 'trivy-report'
+        trivy image --exit-code 1 --severity HIGH,CRITICAL $(IMAGE)
+      displayName: 'Trivy scan'
 
 # ─────────────────────────────────────────────
-# STAGE 9 : Push → ACR
+# STAGE 9 : Push
 # ─────────────────────────────────────────────
 - stage: Push
-  displayName: 'Push to ACR'
   dependsOn: Trivy
   variables:
     IMAGE: crformation.azurecr.io/devops-formation-frontend:$(Build.BuildId)
   jobs:
   - job: PushJob
-    displayName: 'Push Docker Image'
     steps:
-    - task: DownloadBuildArtifacts@1
-      displayName: 'Download image.tar'
-      inputs:
-        artifactName: 'docker-image'
-        downloadPath: '$(Build.ArtifactStagingDirectory)'
-
-    - task: AzureCLI@2
-      displayName: 'Docker Load & Push → ACR'
-      inputs:
-        azureSubscription: 'sc-formation-devops-acr'
-        scriptType: bash
-        scriptLocation: inlineScript
-        inlineScript: |
-          docker load -i $(Build.ArtifactStagingDirectory)/docker-image/image.tar
-          az acr login --name crformation
-          docker push $(IMAGE)
+    - script: |
+        docker load -i $(Build.ArtifactStagingDirectory)/docker-image/image.tar
+        az acr login --name crformation
+        docker push $(IMAGE)
+      displayName: 'Push to ACR'
