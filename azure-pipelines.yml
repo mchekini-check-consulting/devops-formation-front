@@ -122,12 +122,16 @@ stages:
         npm install -g sonarqube-scanner
 
         sonar-scanner \
-          -Dsonar.projectKey=$(SONAR_PROJECT_KEY) \
+          -Dsonar.projectKey=$SONAR_PROJECT_KEY \
           -Dsonar.sources=src \
-          -Dsonar.host.url=$(SONAR_HOST_URL) \
-          -Dsonar.login=$(SONAR_TOKEN) \
+          -Dsonar.host.url=$SONAR_HOST_URL \
+          -Dsonar.token=$SONAR_TOKEN \
           -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
       displayName: 'SonarQube Scan (CLI)'
+      env:
+        SONAR_PROJECT_KEY: $(SONAR_PROJECT_KEY)
+        SONAR_HOST_URL: $(SONAR_HOST_URL)
+        SONAR_TOKEN: $(SONAR_TOKEN)
 
 # ─────────────────────────────────────────────
 # STAGE 6 : Build
