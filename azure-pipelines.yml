@@ -100,12 +100,13 @@ stages:
 # ─────────────────────────────────────────────
 # STAGE 4 : OWASP Dependency Check (CLI)
 # ─────────────────────────────────────────────
+# Désactivé – nécessite la tâche marketplace dependency-check-build-task@6
 
 # ─────────────────────────────────────────────
 # STAGE 5 : SonarQube (CLI version)
 # ─────────────────────────────────────────────
 - stage: Sonar
-  dependsOn: OWASP
+  dependsOn: UnitTests
   jobs:
   - job: SonarJob
     steps:
