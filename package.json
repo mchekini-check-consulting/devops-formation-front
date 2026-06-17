@@ -16,7 +16,7 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "test": "react-scripts test",
+    "test": "react-scripts test --ci --coverage --watchAll=false --reporters=default --reporters=jest-junit",
     "lint": "eslint src/ --max-warnings 0",
     "eject": "react-scripts eject",
     "commit": "git-cz",

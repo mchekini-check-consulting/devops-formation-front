@@ -83,6 +83,7 @@ stages:
       env:
         CI: 'true'
         JEST_JUNIT_OUTPUT_DIR: '$(System.DefaultWorkingDirectory)/test-results'
+        JEST_JUNIT_OUTPUT_NAME: 'junit.xml'
 
     - task: PublishTestResults@2
       condition: always()
@@ -186,6 +187,7 @@ stages:
   jobs:
   - job: DockerBuildJob
     steps:
+    - checkout: self
     - script: |
         az acr login --name crformation
         docker build -t $(IMAGE) .
