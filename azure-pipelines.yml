@@ -106,32 +106,39 @@ stages:
 # STAGE 5 : SonarQube (CLI version)
 # ─────────────────────────────────────────────
 - stage: Sonar
+  displayName: 'SonarQube Analysis'
   dependsOn: UnitTests
   jobs:
   - job: SonarJob
+    displayName: 'Sonar Scan'
     steps:
+    - task: DownloadBuildArtifacts@1
+      displayName: 'Download coverage report'
+      inputs:
+        artifactName: 'coverage-report'
+        downloadPath: '$(Pipeline.Workspace)/coverage'
+
     - task: NodeTool@0
       inputs:
         versionSpec: '20.x'
 
     - task: Npm@1
+      displayName: 'npm install + sonar-scanner'
+      inputs:
+        command: custom
+        customCommand: 'install -g sonarqube-scanner'
+
+    - task: Npm@1
+      displayName: 'npm install'
       inputs:
         command: install
 
     - script: |
-        npm install -g sonarqube-scanner
-
         sonar-scanner \
-          -Dsonar.projectKey=$SONAR_PROJECT_KEY \
-          -Dsonar.sources=src \
-          -Dsonar.host.url=$SONAR_HOST_URL \
-          -Dsonar.token=$SONAR_TOKEN \
-          -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
-      displayName: 'SonarQube Scan (CLI)'
-      env:
-        SONAR_PROJECT_KEY: $(SONAR_PROJECT_KEY)
-        SONAR_HOST_URL: $(SONAR_HOST_URL)
-        SONAR_TOKEN: $(SONAR_TOKEN)
+          -Dsonar.host.url=$(SONAR_HOST_URL) \
+          -Dsonar.token=$(SONAR_TOKEN) \
+          -Dsonar.javascript.lcov.reportPaths=$(Pipeline.Workspace)/coverage/coverage-report/lcov.info
+      displayName: 'SonarQube Scan'
 
 # ─────────────────────────────────────────────
 # STAGE 6 : Build
