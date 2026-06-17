@@ -106,8 +106,17 @@ stages:
   - job: OWASPJob
     steps:
     - script: |
-        wget https://github.com/dependency-check/DependencyCheck/releases/latest/download/dependency-check-12.1.0-release.zip
-        unzip dependency-check-*.zip
+        set -e
+
+        VERSION="12.2.2"
+
+        echo "Downloading OWASP Dependency Check $VERSION..."
+
+        wget -q https://github.com/dependency-check/DependencyCheck/releases/download/v${VERSION}/dependency-check-${VERSION}-release.zip
+
+        unzip -q dependency-check-${VERSION}-release.zip
+
+        chmod +x dependency-check/bin/dependency-check.sh
 
         ./dependency-check/bin/dependency-check.sh \
           --project "$(Build.Repository.Name)" \
@@ -116,6 +125,7 @@ stages:
           --format JSON \
           --out dependency-report \
           --failOnCVSS 7
+
       displayName: 'OWASP Dependency Check (CLI)'
 
     - task: PublishBuildArtifacts@1
