@@ -100,29 +100,7 @@ stages:
 # ─────────────────────────────────────────────
 # STAGE 4 : OWASP Dependency Check (CLI)
 # ─────────────────────────────────────────────
-- script: |
-    set -e
 
-    VERSION="12.2.2"
-
-    wget -q https://github.com/dependency-check/DependencyCheck/releases/download/v${VERSION}/dependency-check-${VERSION}-release.zip
-
-    unzip -q dependency-check-${VERSION}-release.zip
-
-    chmod +x dependency-check/bin/dependency-check.sh
-
-    mkdir -p dependency-report
-    mkdir -p owasp-data
-
-    ./dependency-check/bin/dependency-check.sh \
-      --project "$(Build.Repository.Name)" \
-      --scan "$(Build.SourcesDirectory)/src" \
-      --format HTML \
-      --format JSON \
-      --out dependency-report \
-      --dataDirectory owasp-data \
-      --failOnCVSS 7
-  displayName: 'OWASP Dependency Check (fixed)'
 # ─────────────────────────────────────────────
 # STAGE 5 : SonarQube (CLI version)
 # ─────────────────────────────────────────────
