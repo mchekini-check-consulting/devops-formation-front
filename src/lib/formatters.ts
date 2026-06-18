@@ -8,7 +8,7 @@ export function fmt(n: number) {
 export function fmtDate(s: string | undefined) {
   if (!s) return "—";
   const d = new Date(s);
-  if (isNaN(d.getTime())) return "—";
+  if (Number.isNaN(d.getTime())) return "—";
   return new Intl.DateTimeFormat("fr-FR", {
     dateStyle: "short",
     timeStyle: "short",
