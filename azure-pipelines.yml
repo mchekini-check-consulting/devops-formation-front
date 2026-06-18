@@ -145,6 +145,9 @@ stages:
   - job: SonarJob
     displayName: 'Sonar Scan'
     steps:
+    - checkout: self
+      fetchDepth: 0
+
     - task: DownloadBuildArtifacts@1
       displayName: 'Download coverage report'
       inputs:
