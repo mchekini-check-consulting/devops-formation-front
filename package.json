@@ -52,6 +52,7 @@
       "src/lib/api.ts",
       "src/lib/cart.tsx",
       "src/lib/config.ts",
+      "src/lib/formatters.ts",
       "src/lib/http.ts",
       "src/services/keycloak.ts",
       "src/components/pages/*.tsx",
