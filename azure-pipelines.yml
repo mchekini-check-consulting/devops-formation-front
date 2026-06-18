@@ -149,7 +149,7 @@ stages:
       displayName: 'Download coverage report'
       inputs:
         artifactName: 'coverage-report'
-        downloadPath: '$(Pipeline.Workspace)/coverage'
+        downloadPath: '$(System.DefaultWorkingDirectory)'
 
     - task: NodeTool@0
       inputs:
@@ -167,11 +167,16 @@ stages:
         command: install
 
     - script: |
+        ls -la $(System.DefaultWorkingDirectory)/coverage-report/
         sonar-scanner \
-          -Dsonar.host.url=$(SONAR_HOST_URL) \
-          -Dsonar.token=$(SONAR_TOKEN) \
-          -Dsonar.javascript.lcov.reportPaths=$(Pipeline.Workspace)/coverage/coverage-report/lcov.info
+          -Dsonar.host.url=$SONAR_HOST_URL \
+          -Dsonar.token=$SONAR_TOKEN \
+          -Dsonar.javascript.lcov.reportPaths=$(System.DefaultWorkingDirectory)/coverage-report/lcov.info \
+          -Dsonar.qualitygate.wait=true
       displayName: 'SonarQube Scan'
+      env:
+        SONAR_HOST_URL: $(SONAR_HOST_URL)
+        SONAR_TOKEN: $(SONAR_TOKEN)
 
 # ─────────────────────────────────────────────
 # STAGE 6 : Docker Build
