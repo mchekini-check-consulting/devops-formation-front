@@ -310,5 +310,5 @@ stages:
         scriptLocation: inlineScript
         inlineScript: |
           az acr login --name crformation
-          helm package ./helm
-          helm push frontend-*.tgz oci://crformation.azurecr.io/helm
+          helm package ./helm/front
+          helm push front-*.tgz oci://crformation.azurecr.io/helm
