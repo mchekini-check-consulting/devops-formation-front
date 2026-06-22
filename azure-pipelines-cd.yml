@@ -106,6 +106,20 @@ stages:
           # Checkout pour accéder aux values-{env}.yaml du repo
           - checkout: self
 
+          # Étape 1 : login ACR via le service connection qui a accès au registry
+          - task: AzureCLI@2
+            displayName: 'ACR Login'
+            inputs:
+              azureSubscription: 'sc-formation-devops-acr'
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                set -e
+                az acr login --name $(ACR_NAME)
+                # Les credentials Docker/Helm OCI sont stockés dans ~/.docker/config.json
+                # et restent disponibles pour les tasks suivantes du même job.
+
+          # Étape 2 : kubeconfig AKS + helm deploy via le service connection AKS
           - task: AzureCLI@2
             displayName: 'Helm Deploy → ${{ parameters.environment }}'
             inputs:
@@ -115,7 +129,6 @@ stages:
               inlineScript: |
                 set -e
 
-                # Lire le nom et la version du chart depuis Chart.yaml
                 CHART_NAME=$(grep '^name:'    helm/front/Chart.yaml | awk '{print $2}')
                 CHART_VERSION=$(grep '^version:' helm/front/Chart.yaml | awk '{print $2}')
 
@@ -123,16 +136,11 @@ stages:
                 echo "Image   : $(IMAGE_REPO):$(DEPLOY_TAG)"
                 echo "Env     : ${{ parameters.environment }}"
 
-                # Login ACR (image + OCI helm registry)
-                az acr login --name $(ACR_NAME)
-
-                # Récupérer le kubeconfig AKS
                 az aks get-credentials \
                   --resource-group $(AKS_RESOURCE_GROUP) \
                   --name $(AKS_CLUSTER_NAME) \
                   --overwrite-existing
 
-                # Déploiement Helm depuis le registry OCI ACR
                 helm upgrade --install "${CHART_NAME}" \
                   "oci://crformation.azurecr.io/helm/${CHART_NAME}" \
                   --version "${CHART_VERSION}" \
