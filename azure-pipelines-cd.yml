@@ -12,6 +12,8 @@
 trigger:
 - main
 
+pr: none
+
 parameters:
 - name: environment
   displayName: "Environnement cible"
