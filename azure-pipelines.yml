@@ -11,14 +11,50 @@ pool:
 
 variables:
 - group: variable
+- name: ACR_NAME
+  value: crformation
+- name: IMAGE_REPO
+  value: crformation.azurecr.io/devops-formation-frontend
 
 stages:
 
 # ─────────────────────────────────────────────
-# STAGE 1 : Gitleaks (CLI)
+# STAGE 0 : Setup – Compute Image Tag
+# ─────────────────────────────────────────────
+- stage: SetupTag
+  displayName: 'Setup – Compute Image Tag'
+  jobs:
+  - job: ComputeTag
+    steps:
+    - checkout: self
+      fetchDepth: 0
+
+    - script: |
+        set -e
+
+        # Tag format: {shortsha}-{branchslug}-{timestamp}
+        SHORT_SHA=$(echo "$(Build.SourceVersion)" | cut -c1-7)
+
+        BRANCH_SLUG=$(echo "$(Build.SourceBranchName)" \
+          | tr '[:upper:]' '[:lower:]' \
+          | sed 's|[^a-z0-9]|-|g; s|-\+|-|g; s|^-||; s|-$||' \
+          | cut -c1-20)
+
+        TIMESTAMP=$(date -u +%Y%m%d%H%M)
+
+        IMAGE_TAG="${SHORT_SHA}-${BRANCH_SLUG}-${TIMESTAMP}"
+
+        echo "IMAGE_TAG: $IMAGE_TAG"
+        # Propagate as Build.BuildNumber → accessible in all subsequent stages
+        echo "##vso[build.updatebuildnumber]$IMAGE_TAG"
+      displayName: 'Compute image tag (sha-branchslug-ts)'
+
+# ─────────────────────────────────────────────
+# STAGE 1 : Gitleaks – Secret Scanning
 # ─────────────────────────────────────────────
 - stage: Gitleaks
   displayName: 'Gitleaks – Secret Scanning'
+  dependsOn: SetupTag
   jobs:
   - job: GitleaksJob
     steps:
@@ -27,22 +63,18 @@ stages:
 
     - script: |
         set -e
-
         GITLEAKS_VERSION="8.18.0"
-
         wget -q https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz
-
         tar -xzf gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz
-
         chmod +x gitleaks
-
         ./gitleaks detect --source . --verbose --exit-code 1
-      displayName: 'Run Gitleaks (fixed install)'
+      displayName: 'Run Gitleaks'
 
 # ─────────────────────────────────────────────
-# STAGE 2 : Install & Lint
+# STAGE 2 : Lint
 # ─────────────────────────────────────────────
 - stage: Lint
+  displayName: 'Lint'
   dependsOn: Gitleaks
   jobs:
   - job: LintJob
@@ -64,6 +96,7 @@ stages:
 # STAGE 3 : Unit Tests
 # ─────────────────────────────────────────────
 - stage: UnitTests
+  displayName: 'Unit Tests'
   dependsOn: Lint
   jobs:
   - job: UnitTestsJob
@@ -105,45 +138,36 @@ stages:
   dependsOn: UnitTests
   jobs:
   - job: MutationTestsJob
-    displayName: 'Run Mutation Tests'
     steps:
     - task: NodeTool@0
-      displayName: 'Use Node.js 20.x'
       inputs:
         versionSpec: '20.x'
 
     - task: Npm@1
-      displayName: 'npm install'
       inputs:
         command: install
 
     - task: Npm@1
-      displayName: 'Stryker - Mutation Testing'
+      displayName: 'Stryker – Mutation Testing'
       inputs:
         command: custom
         customCommand: 'run mutation-test'
 
     - task: PublishBuildArtifacts@1
-      displayName: 'Artifact - stryker-report'
+      displayName: 'Artifact – stryker-report'
       condition: always()
       inputs:
         PathtoPublish: '$(System.DefaultWorkingDirectory)/reports/mutation/mutation.html'
         ArtifactName: 'mutation-test-report'
 
 # ─────────────────────────────────────────────
-# STAGE 5 : OWASP Dependency Check (CLI)
-# ─────────────────────────────────────────────
-# Désactivé – nécessite la tâche marketplace dependency-check-build-task@6
-
-# ─────────────────────────────────────────────
-# STAGE 6 : SonarQube (CLI version)
+# STAGE 5 : SonarQube
 # ─────────────────────────────────────────────
 - stage: Sonar
   displayName: 'SonarQube Analysis'
   dependsOn: MutationTests
   jobs:
   - job: SonarJob
-    displayName: 'Sonar Scan'
     steps:
     - checkout: self
       fetchDepth: 0
@@ -159,7 +183,7 @@ stages:
         versionSpec: '20.x'
 
     - task: Npm@1
-      displayName: 'npm install + sonar-scanner'
+      displayName: 'Install sonar-scanner'
       inputs:
         command: custom
         customCommand: 'install -g sonarqube-scanner'
@@ -188,10 +212,9 @@ stages:
   displayName: 'Docker Build'
   dependsOn: Sonar
   variables:
-    IMAGE: crformation.azurecr.io/devops-formation-frontend:$(Build.BuildId)
+    IMAGE: $(IMAGE_REPO):$(Build.BuildNumber)
   jobs:
   - job: DockerBuildJob
-    displayName: 'Build & Save Image'
     steps:
     - task: AzureCLI@2
       displayName: 'Docker Build → save tar'
@@ -200,27 +223,27 @@ stages:
         scriptType: bash
         scriptLocation: inlineScript
         inlineScript: |
-          az acr login --name crformation
+          set -e
+          az acr login --name $(ACR_NAME)
           docker build -t $(IMAGE) .
           docker save $(IMAGE) -o $(Build.ArtifactStagingDirectory)/image.tar
 
     - task: PublishBuildArtifacts@1
-      displayName: 'Artifact - image.tar'
+      displayName: 'Artifact – image.tar'
       inputs:
         PathtoPublish: '$(Build.ArtifactStagingDirectory)/image.tar'
         ArtifactName: 'docker-image'
 
 # ─────────────────────────────────────────────
-# STAGE 8 : Trivy Security Scan
+# STAGE 7 : Trivy Security Scan
 # ─────────────────────────────────────────────
 - stage: Trivy
   displayName: 'Trivy Security Scan'
   dependsOn: DockerBuild
   variables:
-    IMAGE: crformation.azurecr.io/devops-formation-frontend:$(Build.BuildId)
+    IMAGE: $(IMAGE_REPO):$(Build.BuildNumber)
   jobs:
   - job: TrivyJob
-    displayName: 'Trivy Scan'
     steps:
     - task: DownloadBuildArtifacts@1
       displayName: 'Download image.tar'
@@ -240,7 +263,7 @@ stages:
           --no-progress \
           --format table \
           $(IMAGE)
-      displayName: 'Trivy - Scan (fail on HIGH/CRITICAL)'
+      displayName: 'Trivy – Scan (fail on HIGH/CRITICAL)'
 
     - script: |
         trivy image \
@@ -250,28 +273,26 @@ stages:
           --format json \
           --output $(Build.ArtifactStagingDirectory)/trivy-report.json \
           $(IMAGE)
-      displayName: 'Trivy - Export JSON Report'
+      displayName: 'Trivy – Export JSON Report'
       condition: always()
 
     - task: PublishBuildArtifacts@1
-      displayName: 'Artifact - trivy-report.json'
+      displayName: 'Artifact – trivy-report.json'
       condition: always()
       inputs:
         PathtoPublish: '$(Build.ArtifactStagingDirectory)/trivy-report.json'
         ArtifactName: 'trivy-report'
 
 # ─────────────────────────────────────────────
-# STAGE 9 : Push → ACR
+# STAGE 8 : Push Docker Image → ACR
 # ─────────────────────────────────────────────
-- stage: Push
-  displayName: 'Push to ACR'
+- stage: PushDocker
+  displayName: 'Push Docker Image → ACR'
   dependsOn: Trivy
-  #condition: and(succeeded(), eq(variables['Build.Reason'], 'IndividualCI'))
   variables:
-    IMAGE: crformation.azurecr.io/devops-formation-frontend:$(Build.BuildId)
+    IMAGE: $(IMAGE_REPO):$(Build.BuildNumber)
   jobs:
-  - job: PushJob
-    displayName: 'Push Docker Image'
+  - job: PushDockerJob
     steps:
     - task: DownloadBuildArtifacts@1
       displayName: 'Download image.tar'
@@ -286,29 +307,34 @@ stages:
         scriptType: bash
         scriptLocation: inlineScript
         inlineScript: |
+          set -e
           docker load -i $(Build.ArtifactStagingDirectory)/docker-image/image.tar
-          az acr login --name crformation
+          az acr login --name $(ACR_NAME)
           docker push $(IMAGE)
 
 # ─────────────────────────────────────────────
-# STAGE 10 : Push Helm chart → ACR (OCI)
+# STAGE 9 : Push Helm Chart → ACR (OCI)
 # ─────────────────────────────────────────────
-- stage: HelmPush
-  displayName: 'Push Helm Chart'
-  dependsOn: Push
+- stage: PushHelm
+  displayName: 'Push Helm Chart → ACR'
+  dependsOn: PushDocker
   jobs:
-  - job: HelmPushJob
-    displayName: 'Package & Push Helm Chart'
+  - job: PushHelmJob
     steps:
     - checkout: self
 
     - task: AzureCLI@2
-      displayName: 'Helm Package & Push → ACR'
+      displayName: 'Helm Package & Push → ACR OCI'
       inputs:
         azureSubscription: 'sc-formation-devops-acr'
         scriptType: bash
         scriptLocation: inlineScript
         inlineScript: |
-          az acr login --name crformation
-          helm package ./helm/front
-          helm push front-*.tgz oci://crformation.azurecr.io/helm
+          set -e
+          az acr login --name $(ACR_NAME)
+
+          CHART_NAME=$(grep '^name:' helm/front/Chart.yaml | awk '{print $2}')
+          CHART_VERSION=$(grep '^version:' helm/front/Chart.yaml | awk '{print $2}')
+
+          helm package ./helm/front --app-version $(Build.BuildNumber)
+          helm push "${CHART_NAME}-${CHART_VERSION}.tgz" oci://crformation.azurecr.io/helm

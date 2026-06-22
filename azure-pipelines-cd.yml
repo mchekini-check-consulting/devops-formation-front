@@ -1,0 +1,95 @@
+# CD Pipeline – triggered manually after CI passes on main
+# Environments (Azure DevOps) à configurer dans le portail :
+#   dev    → pas d'approbation
+#   qualif → approbation recommandée
+#   prod   → approbation obligatoire
+#
+# Variables requises dans le groupe 'variable' :
+#   ACR_NAME, IMAGE_REPO, AKS_RESOURCE_GROUP, AKS_CLUSTER_NAME
+
+trigger: none
+
+parameters:
+- name: environment
+  displayName: "Environnement cible"
+  type: string
+  values:
+  - dev
+  - qualif
+  - prod
+
+- name: imageTag
+  displayName: "Tag de l'image Docker  (ex: main-abc1234-202406221430)"
+  type: string
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+- group: variable
+- name: ACR_NAME
+  value: crformation
+- name: IMAGE_REPO
+  value: crformation.azurecr.io/devops-formation-frontend
+
+stages:
+
+# ─────────────────────────────────────────────
+# STAGE : Deploy → environnement choisi
+# ─────────────────────────────────────────────
+- stage: Deploy_${{ parameters.environment }}
+  displayName: 'Deploy → ${{ parameters.environment }} (${{ parameters.imageTag }})'
+  jobs:
+
+  - deployment: DeployHelm
+    displayName: 'Helm Upgrade / Install'
+    # Référence l'Environment Azure DevOps du même nom.
+    # Les approval gates sont configurées dans le portail sur cet Environment.
+    environment: ${{ parameters.environment }}
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+
+          # Checkout pour accéder aux values-{env}.yaml du repo
+          - checkout: self
+
+          - task: AzureCLI@2
+            displayName: 'Helm Deploy → ${{ parameters.environment }}'
+            inputs:
+              azureSubscription: 'sc-formation-devops-acr'
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                set -e
+
+                # Lire le nom et la version du chart depuis Chart.yaml
+                CHART_NAME=$(grep '^name:'    helm/front/Chart.yaml | awk '{print $2}')
+                CHART_VERSION=$(grep '^version:' helm/front/Chart.yaml | awk '{print $2}')
+
+                echo "Chart : ${CHART_NAME}  version : ${CHART_VERSION}"
+                echo "Image : $(IMAGE_REPO):${{ parameters.imageTag }}"
+                echo "Env   : ${{ parameters.environment }}"
+
+                # Login ACR (image + OCI helm registry)
+                az acr login --name $(ACR_NAME)
+
+                # Récupérer le kubeconfig AKS
+                az aks get-credentials \
+                  --resource-group $(AKS_RESOURCE_GROUP) \
+                  --name $(AKS_CLUSTER_NAME) \
+                  --overwrite-existing
+
+                # Déploiement Helm depuis le registry OCI ACR
+                helm upgrade --install "${CHART_NAME}" \
+                  "oci://crformation.azurecr.io/helm/${CHART_NAME}" \
+                  --version "${CHART_VERSION}" \
+                  -f "helm/front/values.yaml" \
+                  -f "helm/front/values-${{ parameters.environment }}.yaml" \
+                  --set image.repository=$(IMAGE_REPO) \
+                  --set image.tag=${{ parameters.imageTag }} \
+                  --namespace ${{ parameters.environment }} \
+                  --create-namespace \
+                  --atomic \
+                  --timeout 5m \
+                  --wait
