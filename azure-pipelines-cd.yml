@@ -1,5 +1,4 @@
-# CD Pipeline – déclenché automatiquement sur push vers main
-# L'opérateur peut aussi le lancer manuellement pour choisir l'env et le tag.
+# CD Pipeline – déploiement manuel uniquement
 #
 # Environments Azure DevOps à configurer dans le portail :
 #   dev    → pas d'approbation
@@ -9,25 +8,26 @@
 # Variables requises dans le groupe 'variable' :
 #   AKS_RESOURCE_GROUP, AKS_CLUSTER_NAME
 
-trigger:
-- main
-
+trigger: none
 pr: none
 
 parameters:
+- name: chartName
+  displayName: "Nom du chart Helm dans l'ACR (ex: front)"
+  type: string
+  default: front
+
+- name: chartVersion
+  displayName: "Version du chart Helm (ex: 1.0.5821)"
+  type: string
+
 - name: environment
   displayName: "Environnement cible"
   type: string
-  default: dev
   values:
   - dev
   - qualif
   - prod
-
-- name: imageTag
-  displayName: "Tag de l'image Docker (vide = dernier tag ACR)"
-  type: string
-  default: ''
 
 pool:
   vmImage: ubuntu-latest
@@ -38,75 +38,59 @@ variables:
   value: crformation
 - name: IMAGE_REPO
   value: crformation.azurecr.io/devops-formation-frontend
+- name: HELM_OCI_REPO
+  value: oci://crformation.azurecr.io/helm
 
 stages:
 
 # ─────────────────────────────────────────────
-# STAGE 1 : Resolve Image Tag
+# STAGE 1 : Verify – Chart existe dans l'ACR ?
 # ─────────────────────────────────────────────
-- stage: ResolveTag
-  displayName: 'Resolve Image Tag'
+- stage: VerifyChart
+  displayName: 'Verify Chart → ACR'
   jobs:
-  - job: ResolveTagJob
+  - job: VerifyChartJob
     steps:
     - task: AzureCLI@2
-      displayName: 'Resolve image tag (param ou dernier ACR)'
-      name: resolveTag
+      displayName: 'Vérifier existence chart ${{ parameters.chartName }}:${{ parameters.chartVersion }}'
       inputs:
         azureSubscription: 'sc-formation-devops-acr'
         scriptType: bash
         scriptLocation: inlineScript
         inlineScript: |
           set -e
+          az acr login --name $(ACR_NAME)
 
-          PARAM_TAG="${{ parameters.imageTag }}"
+          TAGS=$(az acr repository show-tags \
+            --name $(ACR_NAME) \
+            --repository helm/${{ parameters.chartName }} \
+            --output tsv)
 
-          if [ -n "$PARAM_TAG" ]; then
-            DEPLOY_TAG="$PARAM_TAG"
-            echo "Tag fourni : $DEPLOY_TAG"
+          if echo "$TAGS" | grep -qx "${{ parameters.chartVersion }}"; then
+            echo "Chart ${{ parameters.chartName }}:${{ parameters.chartVersion }} trouvé dans l'ACR ✅"
           else
-            # Aucun tag fourni → récupère le dernier poussé sur l'ACR
-            az acr login --name $(ACR_NAME)
-            DEPLOY_TAG=$(az acr repository show-tags \
-              --name $(ACR_NAME) \
-              --repository devops-formation-frontend \
-              --orderby time_desc \
-              --top 1 \
-              --output tsv)
-            echo "Tag résolu depuis ACR : $DEPLOY_TAG"
-          fi
-
-          if [ -z "$DEPLOY_TAG" ]; then
-            echo "##[error] Impossible de résoudre le tag image."
+            echo "##[error] Chart ${{ parameters.chartName }}:${{ parameters.chartVersion }} introuvable dans l'ACR."
+            echo "Tags disponibles :"
+            echo "$TAGS"
             exit 1
           fi
-
-          echo "##vso[task.setvariable variable=DEPLOY_TAG;isOutput=true]$DEPLOY_TAG"
 
 # ─────────────────────────────────────────────
 # STAGE 2 : Deploy → environnement choisi
 # ─────────────────────────────────────────────
 - stage: Deploy_${{ parameters.environment }}
-  displayName: 'Deploy → ${{ parameters.environment }}'
-  dependsOn: ResolveTag
-  variables:
-    DEPLOY_TAG: $[ stageDependencies.ResolveTag.ResolveTagJob.outputs['resolveTag.DEPLOY_TAG'] ]
+  displayName: 'Deploy → ${{ parameters.environment }} (chart ${{ parameters.chartVersion }})'
+  dependsOn: VerifyChart
   jobs:
-
   - deployment: DeployHelm
     displayName: 'Helm Upgrade / Install'
-    # Référence l'Environment Azure DevOps du même nom.
-    # Les approval gates sont configurées dans le portail sur cet Environment.
     environment: ${{ parameters.environment }}
     strategy:
       runOnce:
         deploy:
           steps:
 
-          # Checkout pour accéder aux values-{env}.yaml du repo
-          - checkout: self
-
-          # Étape 1 : login ACR via le service connection qui a accès au registry
+          # Login ACR via service connection ACR (stocke les credentials OCI pour helm)
           - task: AzureCLI@2
             displayName: 'ACR Login'
             inputs:
@@ -116,10 +100,8 @@ stages:
               inlineScript: |
                 set -e
                 az acr login --name $(ACR_NAME)
-                # Les credentials Docker/Helm OCI sont stockés dans ~/.docker/config.json
-                # et restent disponibles pour les tasks suivantes du même job.
 
-          # Étape 2 : kubeconfig AKS + helm deploy via le service connection AKS
+          # Pull chart + deploy via service connection AKS
           - task: AzureCLI@2
             displayName: 'Helm Deploy → ${{ parameters.environment }}'
             inputs:
@@ -129,25 +111,38 @@ stages:
               inlineScript: |
                 set -e
 
-                CHART_NAME=$(grep '^name:'    helm/front/Chart.yaml | awk '{print $2}')
-                CHART_VERSION=$(grep '^version:' helm/front/Chart.yaml | awk '{print $2}')
+                # Installer yq pour lire appVersion depuis le chart extrait
+                YQ_VERSION="4.44.1"
+                sudo wget -qO /usr/local/bin/yq \
+                  https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_amd64
+                sudo chmod +x /usr/local/bin/yq
 
-                echo "Chart   : ${CHART_NAME}  version : ${CHART_VERSION}"
-                echo "Image   : $(IMAGE_REPO):$(DEPLOY_TAG)"
-                echo "Env     : ${{ parameters.environment }}"
+                # Extraire le chart OCI pour accéder aux values + appVersion
+                helm pull "$(HELM_OCI_REPO)/${{ parameters.chartName }}" \
+                  --version "${{ parameters.chartVersion }}" \
+                  --untar \
+                  --untardir /tmp/helm-chart
 
+                # Lire le tag image depuis appVersion (baked lors de la CI)
+                IMAGE_TAG=$(yq e '.appVersion' /tmp/helm-chart/${{ parameters.chartName }}/Chart.yaml)
+
+                echo "Chart     : ${{ parameters.chartName }} ${{ parameters.chartVersion }}"
+                echo "Image tag : ${IMAGE_TAG}"
+                echo "Env       : ${{ parameters.environment }}"
+
+                # Kubeconfig AKS
                 az aks get-credentials \
                   --resource-group $(AKS_RESOURCE_GROUP) \
                   --name $(AKS_CLUSTER_NAME) \
                   --overwrite-existing
 
-                helm upgrade --install "${CHART_NAME}" \
-                  "oci://crformation.azurecr.io/helm/${CHART_NAME}" \
-                  --version "${CHART_VERSION}" \
-                  -f "helm/front/values.yaml" \
-                  -f "helm/front/values-${{ parameters.environment }}.yaml" \
+                helm upgrade --install "${{ parameters.chartName }}" \
+                  "$(HELM_OCI_REPO)/${{ parameters.chartName }}" \
+                  --version "${{ parameters.chartVersion }}" \
+                  -f /tmp/helm-chart/${{ parameters.chartName }}/values.yaml \
+                  -f /tmp/helm-chart/${{ parameters.chartName }}/values-${{ parameters.environment }}.yaml \
                   --set image.repository=$(IMAGE_REPO) \
-                  --set image.tag=$(DEPLOY_TAG) \
+                  --set image.tag="${IMAGE_TAG}" \
                   --namespace ${{ parameters.environment }} \
                   --create-namespace \
                   --atomic \
