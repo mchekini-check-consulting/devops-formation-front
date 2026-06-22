@@ -1,26 +1,33 @@
-# CD Pipeline – triggered manually after CI passes on main
-# Environments (Azure DevOps) à configurer dans le portail :
+# CD Pipeline – déclenché automatiquement sur push vers main
+# L'opérateur peut aussi le lancer manuellement pour choisir l'env et le tag.
+#
+# Environments Azure DevOps à configurer dans le portail :
 #   dev    → pas d'approbation
 #   qualif → approbation recommandée
 #   prod   → approbation obligatoire
 #
 # Variables requises dans le groupe 'variable' :
-#   ACR_NAME, IMAGE_REPO, AKS_RESOURCE_GROUP, AKS_CLUSTER_NAME
+#   AKS_RESOURCE_GROUP, AKS_CLUSTER_NAME
 
-trigger: none
+trigger:
+- main
+
+pr: none
 
 parameters:
 - name: environment
   displayName: "Environnement cible"
   type: string
+  default: dev
   values:
   - dev
   - qualif
   - prod
 
 - name: imageTag
-  displayName: "Tag de l'image Docker  (ex: main-abc1234-202406221430)"
+  displayName: "Tag de l'image Docker (vide = dernier tag ACR)"
   type: string
+  default: ''
 
 pool:
   vmImage: ubuntu-latest
@@ -35,10 +42,55 @@ variables:
 stages:
 
 # ─────────────────────────────────────────────
-# STAGE : Deploy → environnement choisi
+# STAGE 1 : Resolve Image Tag
+# ─────────────────────────────────────────────
+- stage: ResolveTag
+  displayName: 'Resolve Image Tag'
+  jobs:
+  - job: ResolveTagJob
+    steps:
+    - task: AzureCLI@2
+      displayName: 'Resolve image tag (param ou dernier ACR)'
+      name: resolveTag
+      inputs:
+        azureSubscription: 'sc-formation-devops-acr'
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          set -e
+
+          PARAM_TAG="${{ parameters.imageTag }}"
+
+          if [ -n "$PARAM_TAG" ]; then
+            DEPLOY_TAG="$PARAM_TAG"
+            echo "Tag fourni : $DEPLOY_TAG"
+          else
+            # Aucun tag fourni → récupère le dernier poussé sur l'ACR
+            az acr login --name $(ACR_NAME)
+            DEPLOY_TAG=$(az acr repository show-tags \
+              --name $(ACR_NAME) \
+              --repository devops-formation-frontend \
+              --orderby time_desc \
+              --top 1 \
+              --output tsv)
+            echo "Tag résolu depuis ACR : $DEPLOY_TAG"
+          fi
+
+          if [ -z "$DEPLOY_TAG" ]; then
+            echo "##[error] Impossible de résoudre le tag image."
+            exit 1
+          fi
+
+          echo "##vso[task.setvariable variable=DEPLOY_TAG;isOutput=true]$DEPLOY_TAG"
+
+# ─────────────────────────────────────────────
+# STAGE 2 : Deploy → environnement choisi
 # ─────────────────────────────────────────────
 - stage: Deploy_${{ parameters.environment }}
-  displayName: 'Deploy → ${{ parameters.environment }} (${{ parameters.imageTag }})'
+  displayName: 'Deploy → ${{ parameters.environment }}'
+  dependsOn: ResolveTag
+  variables:
+    DEPLOY_TAG: $[ stageDependencies.ResolveTag.ResolveTagJob.outputs['resolveTag.DEPLOY_TAG'] ]
   jobs:
 
   - deployment: DeployHelm
@@ -54,40 +106,48 @@ stages:
           # Checkout pour accéder aux values-{env}.yaml du repo
           - checkout: self
 
+          # Étape 1 : login ACR via le service connection qui a accès au registry
           - task: AzureCLI@2
-            displayName: 'Helm Deploy → ${{ parameters.environment }}'
+            displayName: 'ACR Login'
             inputs:
               azureSubscription: 'sc-formation-devops-acr'
               scriptType: bash
               scriptLocation: inlineScript
               inlineScript: |
                 set -e
+                az acr login --name $(ACR_NAME)
+                # Les credentials Docker/Helm OCI sont stockés dans ~/.docker/config.json
+                # et restent disponibles pour les tasks suivantes du même job.
 
-                # Lire le nom et la version du chart depuis Chart.yaml
+          # Étape 2 : kubeconfig AKS + helm deploy via le service connection AKS
+          - task: AzureCLI@2
+            displayName: 'Helm Deploy → ${{ parameters.environment }}'
+            inputs:
+              azureSubscription: 'sc-formation-devops-aks'
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                set -e
+
                 CHART_NAME=$(grep '^name:'    helm/front/Chart.yaml | awk '{print $2}')
                 CHART_VERSION=$(grep '^version:' helm/front/Chart.yaml | awk '{print $2}')
 
-                echo "Chart : ${CHART_NAME}  version : ${CHART_VERSION}"
-                echo "Image : $(IMAGE_REPO):${{ parameters.imageTag }}"
-                echo "Env   : ${{ parameters.environment }}"
+                echo "Chart   : ${CHART_NAME}  version : ${CHART_VERSION}"
+                echo "Image   : $(IMAGE_REPO):$(DEPLOY_TAG)"
+                echo "Env     : ${{ parameters.environment }}"
 
-                # Login ACR (image + OCI helm registry)
-                az acr login --name $(ACR_NAME)
-
-                # Récupérer le kubeconfig AKS
                 az aks get-credentials \
                   --resource-group $(AKS_RESOURCE_GROUP) \
                   --name $(AKS_CLUSTER_NAME) \
                   --overwrite-existing
 
-                # Déploiement Helm depuis le registry OCI ACR
                 helm upgrade --install "${CHART_NAME}" \
                   "oci://crformation.azurecr.io/helm/${CHART_NAME}" \
                   --version "${CHART_VERSION}" \
                   -f "helm/front/values.yaml" \
                   -f "helm/front/values-${{ parameters.environment }}.yaml" \
                   --set image.repository=$(IMAGE_REPO) \
-                  --set image.tag=${{ parameters.imageTag }} \
+                  --set image.tag=$(DEPLOY_TAG) \
                   --namespace ${{ parameters.environment }} \
                   --create-namespace \
                   --atomic \
