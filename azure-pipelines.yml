@@ -18,7 +18,7 @@ variables:
 stages:
 
 # ─────────────────────────────────────────────
-# STAGE 0 : Setup – Compute Image Tag  o
+# STAGE 0 : Setup – Compute Image Tag  o_o
 # ─────────────────────────────────────────────
 - stage: SetupTag
   displayName: 'Setup – Compute Image Tag'
