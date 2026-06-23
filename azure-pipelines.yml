@@ -32,9 +32,14 @@ stages:
         set -e
 
         # Tag format: {shortsha}-{branchslug}-{timestamp}
+        # branchslug = branche BASE (target) de la PR, pas la branche compare
+        # Fallback sur Build.SourceBranchName si hors contexte PR
         SHORT_SHA=$(echo "$(Build.SourceVersion)" | cut -c1-7)
 
-        BRANCH_SLUG=$(echo "$(Build.SourceBranchName)" \
+        RAW_BRANCH="${SYSTEM_PULLREQUEST_TARGETBRANCH:-$(Build.SourceBranchName)}"
+        BRANCH=$(echo "$RAW_BRANCH" | sed 's|refs/heads/||')
+
+        BRANCH_SLUG=$(echo "$BRANCH" \
           | tr '[:upper:]' '[:lower:]' \
           | sed 's|[^a-z0-9]|-|g; s|-\+|-|g; s|^-||; s|-$||' \
           | cut -c1-20)
@@ -44,9 +49,10 @@ stages:
         IMAGE_TAG="${SHORT_SHA}-${BRANCH_SLUG}-${TIMESTAMP}"
 
         echo "IMAGE_TAG: $IMAGE_TAG"
-        # Propagate as Build.BuildNumber → accessible in all subsequent stages
         echo "##vso[build.updatebuildnumber]$IMAGE_TAG"
       displayName: 'Compute image tag (sha-branchslug-ts)'
+      env:
+        SYSTEM_PULLREQUEST_TARGETBRANCH: $(System.PullRequest.TargetBranch)
 
 # ─────────────────────────────────────────────
 # STAGE 1 : Gitleaks – Secret Scanning
@@ -204,136 +210,3 @@ stages:
         SONAR_HOST_URL: $(SONAR_HOST_URL)
         SONAR_TOKEN: $(SONAR_TOKEN)
 
-# ─────────────────────────────────────────────
-# STAGE 6 : Docker Build
-# ─────────────────────────────────────────────
-- stage: DockerBuild
-  displayName: 'Docker Build'
-  dependsOn: Sonar
-  variables:
-    IMAGE: $(IMAGE_REPO):$(Build.BuildNumber)
-  jobs:
-  - job: DockerBuildJob
-    steps:
-    - task: AzureCLI@2
-      displayName: 'Docker Build → save tar'
-      inputs:
-        azureSubscription: 'sc-formation-devops-acr'
-        scriptType: bash
-        scriptLocation: inlineScript
-        inlineScript: |
-          set -e
-          az acr login --name $(ACR_NAME)
-          docker build -t $(IMAGE) .
-          docker save $(IMAGE) -o $(Build.ArtifactStagingDirectory)/image.tar
-
-    - task: PublishBuildArtifacts@1
-      displayName: 'Artifact – image.tar'
-      inputs:
-        PathtoPublish: '$(Build.ArtifactStagingDirectory)/image.tar'
-        ArtifactName: 'docker-image'
-
-# ─────────────────────────────────────────────
-# STAGE 7 : Trivy Security Scan
-# ─────────────────────────────────────────────
-- stage: Trivy
-  displayName: 'Trivy Security Scan'
-  dependsOn: DockerBuild
-  variables:
-    IMAGE: $(IMAGE_REPO):$(Build.BuildNumber)
-  jobs:
-  - job: TrivyJob
-    steps:
-    - task: DownloadBuildArtifacts@1
-      displayName: 'Download image.tar'
-      inputs:
-        artifactName: 'docker-image'
-        downloadPath: '$(Build.ArtifactStagingDirectory)'
-
-    - script: docker load -i $(Build.ArtifactStagingDirectory)/docker-image/image.tar
-      displayName: 'Docker Load Image'
-
-    - script: |
-        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
-          | sh -s -- -b /usr/local/bin
-        trivy image \
-          --exit-code 1 \
-          --severity HIGH,CRITICAL \
-          --no-progress \
-          --format table \
-          $(IMAGE)
-      displayName: 'Trivy – Scan (fail on HIGH/CRITICAL)'
-
-    - script: |
-        trivy image \
-          --exit-code 0 \
-          --severity HIGH,CRITICAL \
-          --no-progress \
-          --format json \
-          --output $(Build.ArtifactStagingDirectory)/trivy-report.json \
-          $(IMAGE)
-      displayName: 'Trivy – Export JSON Report'
-      condition: always()
-
-    - task: PublishBuildArtifacts@1
-      displayName: 'Artifact – trivy-report.json'
-      condition: always()
-      inputs:
-        PathtoPublish: '$(Build.ArtifactStagingDirectory)/trivy-report.json'
-        ArtifactName: 'trivy-report'
-
-# ─────────────────────────────────────────────
-# STAGE 8 : Push Docker Image → ACR
-# ─────────────────────────────────────────────
-- stage: PushDocker
-  displayName: 'Push Docker Image → ACR'
-  dependsOn: Trivy
-  variables:
-    IMAGE: $(IMAGE_REPO):$(Build.BuildNumber)
-  jobs:
-  - job: PushDockerJob
-    steps:
-    - task: DownloadBuildArtifacts@1
-      displayName: 'Download image.tar'
-      inputs:
-        artifactName: 'docker-image'
-        downloadPath: '$(Build.ArtifactStagingDirectory)'
-
-    - task: AzureCLI@2
-      displayName: 'Docker Load & Push → ACR'
-      inputs:
-        azureSubscription: 'sc-formation-devops-acr'
-        scriptType: bash
-        scriptLocation: inlineScript
-        inlineScript: |
-          set -e
-          docker load -i $(Build.ArtifactStagingDirectory)/docker-image/image.tar
-          az acr login --name $(ACR_NAME)
-          docker push $(IMAGE)
-
-# ─────────────────────────────────────────────
-# STAGE 9 : Push Helm Chart → ACR (OCI)
-# ─────────────────────────────────────────────
-- stage: PushHelm
-  displayName: 'Push Helm Chart → ACR'
-  dependsOn: PushDocker
-  jobs:
-  - job: PushHelmJob
-    steps:
-    - checkout: self
-
-    - task: AzureCLI@2
-      displayName: 'Helm Package & Push → ACR OCI'
-      inputs:
-        azureSubscription: 'sc-formation-devops-acr'
-        scriptType: bash
-        scriptLocation: inlineScript
-        inlineScript: |
-          set -e
-          az acr login --name $(ACR_NAME)
-
-          CHART_NAME=$(grep '^name:' helm/front/Chart.yaml | awk '{print $2}')
-          CHART_VERSION=$(grep '^version:' helm/front/Chart.yaml | awk '{print $2}')
-
-          helm package ./helm/front --app-version $(Build.BuildNumber)
-          helm push "${CHART_NAME}-${CHART_VERSION}.tgz" oci://crformation.azurecr.io/helm
