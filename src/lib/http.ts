@@ -1,5 +1,5 @@
 import { API_CONFIG } from "./config";
-import { getToken } from "../services/keycloak";
+import { getToken, getUserId } from "../services/keycloak";
 
 export const isDev =
   typeof window !== "undefined" && process.env.NODE_ENV === "development";
@@ -35,6 +35,8 @@ function buildTraceparent(traceId: string): string {
 const _correlationId = generateUUID();
 // Session-scoped W3C traceId (16 bytes = 32 hex) shared by all requests in this tab
 const _traceId = generateHexId(16);
+// Fallback user ID for unauthenticated sessions (no JWT)
+const _anonymousUserId = generateUUID();
 
 export function buildUrl(service: "CATALOG" | "ORDERS" | "PAYMENT", path = "") {
   if (isDev) {
@@ -56,9 +58,11 @@ export function buildUrl(service: "CATALOG" | "ORDERS" | "PAYMENT", path = "") {
 
 export async function doFetch(url: string, opts?: RequestInit) {
   const token = await getToken();
+  const userId = token ? getUserId() : _anonymousUserId;
   const traceHeaders: Record<string, string> = {
     "X-Correlation-ID": _correlationId,
     traceparent: buildTraceparent(_traceId),
+    "X-User-ID": userId,
   };
   if (token) {
     traceHeaders["Authorization"] = `Bearer ${token}`;
