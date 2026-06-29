@@ -2,7 +2,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: allow-front
-  namespace: dev
+  namespace: {{ .Values.namespace }}
 spec:
   podSelector:
     matchLabels:
