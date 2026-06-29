@@ -1,4 +1,5 @@
 replicaCount: 2
+namespace: qualif
 
 resources:
   requests:

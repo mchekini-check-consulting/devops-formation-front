@@ -1,5 +1,5 @@
 replicaCount: 2
-
+namespace: prod
 resources:
   requests:
     cpu: 50m
