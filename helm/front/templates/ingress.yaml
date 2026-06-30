@@ -11,7 +11,10 @@ metadata:
 spec:
   ingressClassName: {{ .Values.ingress.className }}
   rules:
-    - http:
+    - host: {{ .Values.ingress.host }}
+      # Host dédié par environnement → évite les conflits de paths entre namespaces
+      # NGINX valide (host + path) globalement → hosts différents = pas de collision
+      http:
         paths:
           {{- range .Values.ingress.routes }}
           - path: {{ .path }}
