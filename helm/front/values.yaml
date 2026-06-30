@@ -41,9 +41,9 @@ resources:
     memory: 256Mi
 
 configmap:
-  CATALOG: "http://98.66.248.206/api/products"
-  ORDERS: "http://98.66.248.206/api/orders"
-  PAYMENT: "http://98.66.248.206/api/payments"
+  CATALOG: "http://dev.98.66.248.206.nip.io/api/products"
+  ORDERS: "http://dev.98.66.248.206.nip.io/api/orders"
+  PAYMENT: "http://dev.98.66.248.206.nip.io/api/payments"
   AUTH_ENABLED: "false"
 
 pdb:
@@ -73,6 +73,9 @@ ingress:
   enabled: true
   name: ecommerce-ingress
   className: nginx
+  host: dev.98.66.248.206.nip.io
+  # nip.io = DNS wildcard gratuit : 98.66.248.206.nip.io résout vers 98.66.248.206
+  # Chaque env a son propre sous-domaine → pas de conflit NGINX entre namespaces
   annotations:
     nginx.ingress.kubernetes.io/use-regex: "true"
   routes:
