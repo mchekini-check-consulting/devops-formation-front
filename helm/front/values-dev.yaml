@@ -11,7 +11,6 @@ resources:
 ingress:
   enabled: true
   name: ecommerce-ingress
-  host: dev.98.66.248.206.nip.io
   className: nginx
   annotations:
     nginx.ingress.kubernetes.io/use-regex: "true"

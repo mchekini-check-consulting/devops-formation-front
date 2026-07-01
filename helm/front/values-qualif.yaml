@@ -10,35 +10,7 @@ resources:
     memory: 128Mi
 
 ingress:
-  enabled: true
-  name: ecommerce-ingress-qualif
-  # Nom différent de dev → pas de conflit de ressource dans le namespace qualif
-  host: qualif.98.66.248.206.nip.io
-  # Sous-domaine qualif → NGINX accepte car (host, path) est unique
-  className: nginx
-  annotations:
-    nginx.ingress.kubernetes.io/use-regex: "true"
-  routes:
-    - path: /api/products
-      pathType: Prefix
-      service:
-        name: catalogue
-        port: 4000
-    - path: /api/orders
-      pathType: Prefix
-      service:
-        name: order
-        port: 8000
-    - path: /api/payments
-      pathType: Prefix
-      service:
-        name: payment
-        port: 8082
-    - path: /
-      pathType: Prefix
-      service:
-        name: front
-        port: 80
+  enabled: false
 
 configmap:
   CATALOG: "http://qualif.98.66.248.206.nip.io/api/products"
