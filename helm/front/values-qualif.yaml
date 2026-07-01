@@ -13,11 +13,11 @@ ingress:
   enabled: false
 
 configmap:
-  CATALOG: "http://qualif.98.66.248.206.nip.io/api/products"
+  CATALOG: "http://98.66.248.206/api/products"
   # URL qualif → le front appelle les APIs via le bon hostname
   # → NGINX route vers les services du namespace qualif
-  ORDERS: "http://qualif.98.66.248.206.nip.io/api/orders"
-  PAYMENT: "http://qualif.98.66.248.206.nip.io/api/payments"
+  ORDERS: "http://98.66.248.206/api/orders"
+  PAYMENT: "http://98.66.248.206/api/payments"
   AUTH_ENABLED: "false"
 
 hpa:

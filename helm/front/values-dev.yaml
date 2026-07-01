@@ -37,9 +37,9 @@ ingress:
         port: 80
 
 configmap:
-  CATALOG: "http://dev.98.66.248.206.nip.io/api/products"
-  ORDERS: "http://dev.98.66.248.206.nip.io/api/orders"
-  PAYMENT: "http://dev.98.66.248.206.nip.io/api/payments"
+  CATALOG: "http://98.66.248.206/api/products"
+  ORDERS: "http://98.66.248.206/api/orders"
+  PAYMENT: "http://98.66.248.206/api/payments"
   AUTH_ENABLED: "false"
 
 hpa:
