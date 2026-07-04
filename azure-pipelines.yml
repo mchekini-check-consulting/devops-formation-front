@@ -125,6 +125,13 @@ stages:
         PathtoPublish: '$(System.DefaultWorkingDirectory)/coverage'
         ArtifactName: 'coverage-report'
 
+    - task: PublishBuildArtifacts@1
+      displayName: 'Artifact – coverage HTML report'
+      condition: always()
+      inputs:
+        PathtoPublish: '$(System.DefaultWorkingDirectory)/coverage/lcov-report'
+        ArtifactName: 'coverage-html-report'
+
 # ─────────────────────────────────────────────
 # STAGE 4 : SonarQube Analysis
 # ─────────────────────────────────────────────
