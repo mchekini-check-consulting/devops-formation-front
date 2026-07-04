@@ -120,10 +120,17 @@ stages:
         testResultsFiles: '**/test-results/junit.xml'
 
     - task: PublishBuildArtifacts@1
+      displayName: 'Artifact – coverage-report'
       condition: always()
       inputs:
         PathtoPublish: '$(System.DefaultWorkingDirectory)/coverage'
         ArtifactName: 'coverage-report'
+
+    - task: PublishCodeCoverageResults@2
+      displayName: 'Publish Code Coverage'
+      condition: always()
+      inputs:
+        summaryFileLocation: '$(System.DefaultWorkingDirectory)/coverage/cobertura-coverage.xml'
 
 # ─────────────────────────────────────────────
 # STAGE 4 : SonarQube Analysis
