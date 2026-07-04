@@ -48,6 +48,7 @@
     ]
   },
   "jest": {
+    "coverageReporters": ["text", "lcov", "cobertura"],
     "collectCoverageFrom": [
       "src/lib/api.ts",
       "src/lib/cart.tsx",
