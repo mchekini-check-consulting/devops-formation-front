@@ -67,7 +67,7 @@ stages:
         set -e
         SHORT_SHA=$(echo "$(Build.SourceVersion)" | cut -c1-7)
 
-        RAW_BRANCH="${SYSTEM_PULLREQUEST_TARGETBRANCH:-$(Build.SourceBranchName)}"
+        RAW_BRANCH="$(Build.SourceBranchName)"
         BRANCH=$(echo "$RAW_BRANCH" | sed 's|refs/heads/||')
 
         BRANCH_SLUG=$(echo "$BRANCH" \
@@ -81,8 +81,7 @@ stages:
         echo "IMAGE_TAG: $IMAGE_TAG"
         echo "##vso[build.updatebuildnumber]$IMAGE_TAG"
       displayName: 'Compute image tag (sha-branchslug-ts)'
-      env:
-        SYSTEM_PULLREQUEST_TARGETBRANCH: $(System.PullRequest.TargetBranch)
+      env: {}
 
 # ─────────────────────────────────────────────
 # STAGE : Docker Build

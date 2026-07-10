@@ -1,5 +1,5 @@
 image:
-  repository: crformation.azurecr.io/ecommerce-front
+  repository: crformation.azurecr.io/devops-formation-frontend
   tag: "7.0"
   pullPolicy: Always
 
