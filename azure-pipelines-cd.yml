@@ -1,12 +1,13 @@
-# CD Pipeline – déploiement manuel uniquement
+# CD Pipeline — GitOps (pull model)
 #
-# Environments Azure DevOps à configurer dans le portail :
-#   dev    → pas d'approbation
-#   qualif → approbation recommandée
-#   prod   → approbation obligatoire
+# Deux modes de fonctionnement :
+#   1. Automatique : push sur main → build + scan + push ACR → update tag dans le repo gitops (dev)
+#   2. Manuel      : choix de l'environnement (qualif/prod) + imageTag → update tag dans le repo gitops
+#
+# ArgoCD détecte le changement dans le repo gitops et déploie automatiquement.
 #
 # Variables requises dans le groupe 'variable' :
-#   AKS_RESOURCE_GROUP, AKS_CLUSTER_NAME, SONAR_HOST_URL, SONAR_TOKEN
+#   GITOPS_PAT — Personal Access Token avec accès au repo devops-formation-gitops
 
 trigger:
   branches:
@@ -17,18 +18,17 @@ pr: none
 
 parameters:
 - name: environment
-  displayName: "Environnement cible"
+  displayName: "Environnement cible (qualif/prod uniquement)"
   type: string
-  default: dev
+  default: qualif
   values:
-  - dev
   - qualif
   - prod
 
-- name: chartVersion
-  displayName: "Version du chart Helm (requis pour qualif/prod, ex: 1.0.5821)"
+- name: imageTag
+  displayName: "Tag image existant dans ACR à promouvoir"
   type: string
-  default: ''
+  default: ' '
 
 pool:
   vmImage: ubuntu-latest
@@ -39,17 +39,24 @@ variables:
   value: crformation
 - name: IMAGE_REPO
   value: crformation.azurecr.io/devops-formation-frontend
-- name: HELM_OCI_REPO
-  value: oci://crformation.azurecr.io/helm
+- name: GITOPS_REPO
+  value: devops-formation-gitops
+- name: APP_NAME
+  value: front
 
 stages:
 
+# =============================================================
+#  DEV FLOW : Build → Docker → Trivy → Push ACR → Update GitOps
+#  Déclenché automatiquement au push sur main
+# =============================================================
+
 # ─────────────────────────────────────────────
-# STAGE 0 : Setup – Compute Image Tag (dev uniquement)
+# STAGE : Setup – Compute Image Tag
 # ─────────────────────────────────────────────
 - stage: SetupTag
   displayName: 'Setup – Compute Image Tag'
-  condition: eq('${{ parameters.environment }}', 'dev')
+  condition: ne(variables['Build.Reason'], 'Manual')
   jobs:
   - job: ComputeTag
     steps:
@@ -78,60 +85,12 @@ stages:
         SYSTEM_PULLREQUEST_TARGETBRANCH: $(System.PullRequest.TargetBranch)
 
 # ─────────────────────────────────────────────
-# STAGE 1 : Validate
-#   dev        → aucune vérification de chartVersion
-#   qualif/prod → vérifie que chartVersion est fourni et existe dans l'ACR
-# ─────────────────────────────────────────────
-- stage: Validate
-  displayName: 'Validate'
-  dependsOn: []
-  jobs:
-  - job: ValidateJob
-    steps:
-    - ${{ if eq(parameters.environment, 'dev') }}:
-      - script: echo "Environnement dev — build complet à venir, aucun chartVersion requis."
-        displayName: 'Validate dev'
-
-    - ${{ if ne(parameters.environment, 'dev') }}:
-      - script: |
-          if [ -z "${{ parameters.chartVersion }}" ]; then
-            echo "##[error] chartVersion est obligatoire pour l'environnement ${{ parameters.environment }}."
-            exit 1
-          fi
-          echo "chartVersion=${{ parameters.chartVersion }}"
-        displayName: 'Vérifier chartVersion fourni'
-
-      - task: AzureCLI@2
-        displayName: 'Vérifier existence chart dans ACR'
-        inputs:
-          azureSubscription: 'sc-formation-devops-acr'
-          scriptType: bash
-          scriptLocation: inlineScript
-          inlineScript: |
-            set -e
-            az acr login --name $(ACR_NAME)
-
-            TAGS=$(az acr repository show-tags \
-              --name $(ACR_NAME) \
-              --repository helm/front \
-              --output tsv)
-
-            if echo "$TAGS" | grep -qx "${{ parameters.chartVersion }}"; then
-              echo "Chart front:${{ parameters.chartVersion }} trouvé dans l'ACR ✅"
-            else
-              echo "##[error] Chart front:${{ parameters.chartVersion }} introuvable dans l'ACR."
-              echo "Tags disponibles :"
-              echo "$TAGS"
-              exit 1
-            fi
-
-# ─────────────────────────────────────────────
-# STAGE 2 : Docker Build (dev uniquement)
+# STAGE : Docker Build
 # ─────────────────────────────────────────────
 - stage: DockerBuild
   displayName: 'Docker Build'
-  dependsOn: [SetupTag, Validate]
-  condition: and(succeeded('SetupTag'), succeeded('Validate'), eq('${{ parameters.environment }}', 'dev'))
+  dependsOn: [SetupTag]
+  condition: and(succeeded('SetupTag'), ne(variables['Build.Reason'], 'Manual'))
   variables:
     IMAGE: $(IMAGE_REPO):$(Build.BuildNumber)
   jobs:
@@ -156,12 +115,12 @@ stages:
         ArtifactName: 'docker-image'
 
 # ─────────────────────────────────────────────
-# STAGE 3 : Trivy Security Scan (dev uniquement)
+# STAGE : Trivy Security Scan
 # ─────────────────────────────────────────────
 - stage: Trivy
   displayName: 'Trivy Security Scan'
   dependsOn: DockerBuild
-  condition: and(succeeded('DockerBuild'), eq('${{ parameters.environment }}', 'dev'))
+  condition: and(succeeded('DockerBuild'), ne(variables['Build.Reason'], 'Manual'))
   variables:
     IMAGE: $(IMAGE_REPO):$(Build.BuildNumber)
   jobs:
@@ -206,12 +165,12 @@ stages:
         ArtifactName: 'trivy-report'
 
 # ─────────────────────────────────────────────
-# STAGE 4 : Push Docker Image → ACR (dev uniquement)
+# STAGE : Push Docker Image → ACR
 # ─────────────────────────────────────────────
 - stage: PushACR
   displayName: 'Push Docker Image → ACR'
   dependsOn: Trivy
-  condition: and(succeeded('Trivy'), eq('${{ parameters.environment }}', 'dev'))
+  condition: and(succeeded('Trivy'), ne(variables['Build.Reason'], 'Manual'))
   variables:
     IMAGE: $(IMAGE_REPO):$(Build.BuildNumber)
   jobs:
@@ -236,133 +195,95 @@ stages:
           docker push $(IMAGE)
 
 # ─────────────────────────────────────────────
-# STAGE 5 : Inject Tag + Package + Push Helm → ACR (dev uniquement)
+# STAGE : Update GitOps repo (dev)
 # ─────────────────────────────────────────────
-- stage: HelmPush
-  displayName: 'Push Helm Chart → ACR'
+- stage: UpdateGitopsDev
+  displayName: 'Update GitOps → dev'
   dependsOn: PushACR
-  condition: and(succeeded('PushACR'), eq('${{ parameters.environment }}', 'dev'))
+  condition: and(succeeded('PushACR'), ne(variables['Build.Reason'], 'Manual'))
   jobs:
-  - job: HelmPushJob
+  - job: UpdateGitopsJob
+    displayName: 'Update image tag in gitops repo'
     steps:
-    - checkout: self
+    - checkout: none
 
     - script: |
+        set -e
+
+        # Installer yq
         YQ_VERSION="4.44.1"
         sudo wget -qO /usr/local/bin/yq \
           https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_amd64
         sudo chmod +x /usr/local/bin/yq
-      displayName: 'Install yq'
 
-    - script: |
-        set -e
-        CHART_VERSION="1.0.$(Build.BuildId)"
+        # Cloner le repo gitops (GitHub)
+        git clone https://$(GITOPS_PAT)@github.com/juba-touam/$(GITOPS_REPO).git /tmp/gitops
+        cd /tmp/gitops
 
-        yq e '.appVersion = "'"$(Build.BuildNumber)"'"' -i helm/front/Chart.yaml
-        yq e '.version    = "'"${CHART_VERSION}"'"'     -i helm/front/Chart.yaml
-        yq e '.image.tag  = "'"$(Build.BuildNumber)"'"' -i helm/front/values-dev.yaml
+        # Mettre à jour le tag image
+        VALUES_FILE="environments/dev/40-applications/$(APP_NAME)/values.yaml"
+        echo "Updating ${VALUES_FILE} → image.tag = $(Build.BuildNumber)"
+        yq e -i ".image.tag = \"$(Build.BuildNumber)\"" "${VALUES_FILE}"
 
-        echo "Chart.yaml :"
-        cat helm/front/Chart.yaml
-      displayName: 'Inject image tag → Chart.yaml + values-dev.yaml'
+        # Commit & push
+        git config user.email "azure-pipelines[bot]@users.noreply.github.com"
+        git config user.name "Azure Pipelines"
+        git add "${VALUES_FILE}"
+        git commit -m "chore($(APP_NAME)): update dev image tag to $(Build.BuildNumber)"
+        git push origin main
+      displayName: 'Clone gitops + yq update + push'
 
-    - task: AzureCLI@2
-      displayName: 'Helm Package & Push → ACR OCI'
-      inputs:
-        azureSubscription: 'sc-formation-devops-acr'
-        scriptType: bash
-        scriptLocation: inlineScript
-        inlineScript: |
-          set -e
-          az acr login --name $(ACR_NAME)
-
-          CHART_NAME=$(yq e '.name'    helm/front/Chart.yaml)
-          CHART_VERSION=$(yq e '.version' helm/front/Chart.yaml)
-
-          helm package ./helm/front
-          helm push "${CHART_NAME}-${CHART_VERSION}.tgz" $(HELM_OCI_REPO)
-
-          echo "Poussé : ${CHART_NAME}-${CHART_VERSION} (appVersion=$(Build.BuildNumber))"
+# =============================================================
+#  QUALIF/PROD FLOW : Update GitOps (promote)
+#  Déclenché manuellement
+# =============================================================
 
 # ─────────────────────────────────────────────
-# STAGE 6 : Deploy
-#   dev        → attend HelmPush (build complet)
-#   qualif/prod → attend uniquement Validate (chart existant dans l'ACR)
+# STAGE : Update GitOps repo (qualif/prod)
 # ─────────────────────────────────────────────
-- stage: Deploy
-  displayName: 'Deploy → ${{ parameters.environment }}'
-  dependsOn: [Validate, HelmPush]
-  condition: |
-    and(
-      succeeded('Validate'),
-      or(
-        and(eq('${{ parameters.environment }}', 'dev'), succeeded('HelmPush')),
-        and(ne('${{ parameters.environment }}', 'dev'), eq(dependencies.HelmPush.result, 'Skipped'))
-      )
-    )
+- stage: UpdateGitopsPromote
+  displayName: 'Update GitOps → ${{ parameters.environment }}'
+  condition: eq(variables['Build.Reason'], 'Manual')
   jobs:
-  - deployment: DeployHelm
-    displayName: 'Helm Upgrade / Install'
+  - deployment: PromoteGitops
+    displayName: 'Promote image tag → ${{ parameters.environment }}'
     environment: ${{ parameters.environment }}
     strategy:
       runOnce:
         deploy:
           steps:
-          - task: AzureCLI@2
-            displayName: 'ACR Login'
-            inputs:
-              azureSubscription: 'sc-formation-devops-acr'
-              scriptType: bash
-              scriptLocation: inlineScript
-              inlineScript: |
-                set -e
-                az acr login --name $(ACR_NAME)
+          - checkout: none
 
-          - task: AzureCLI@2
-            displayName: 'Helm Deploy → ${{ parameters.environment }}'
-            inputs:
-              azureSubscription: 'sc-formation-devops-aks'
-              scriptType: bash
-              scriptLocation: inlineScript
-              inlineScript: |
-                set -e
+          - script: |
+              set -e
 
-                YQ_VERSION="4.44.1"
-                sudo wget -qO /usr/local/bin/yq \
-                  https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_amd64
-                sudo chmod +x /usr/local/bin/yq
+              IMAGE_TAG="${{ parameters.imageTag }}"
+              IMAGE_TAG=$(echo "$IMAGE_TAG" | xargs)
 
-                if [ "${{ parameters.environment }}" = "dev" ]; then
-                  CHART_VERSION="1.0.$(Build.BuildId)"
-                else
-                  CHART_VERSION="${{ parameters.chartVersion }}"
-                fi
+              if [ -z "$IMAGE_TAG" ]; then
+                echo "##[error] Le paramètre imageTag est requis pour qualif/prod."
+                exit 1
+              fi
 
-                helm pull "$(HELM_OCI_REPO)/front" \
-                  --version "${CHART_VERSION}" \
-                  --untar \
-                  --untardir /tmp/helm-chart
+              # Installer yq
+              YQ_VERSION="4.44.1"
+              sudo wget -qO /usr/local/bin/yq \
+                https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_amd64
+              sudo chmod +x /usr/local/bin/yq
 
-                IMAGE_TAG=$(yq e '.appVersion' /tmp/helm-chart/front/Chart.yaml)
+              # Cloner le repo gitops (GitHub)
+              git clone https://$(GITOPS_PAT)@github.com/juba-touam/$(GITOPS_REPO).git /tmp/gitops
+              cd /tmp/gitops
 
-                echo "Chart     : front ${CHART_VERSION}"
-                echo "Image tag : ${IMAGE_TAG}"
-                echo "Env       : ${{ parameters.environment }}"
+              # Mettre à jour le tag image
+              VALUES_FILE="environments/${{ parameters.environment }}/40-applications/$(APP_NAME)/values.yaml"
+              echo "Updating ${VALUES_FILE} → image.tag = ${IMAGE_TAG}"
+              yq e -i ".image.tag = \"${IMAGE_TAG}\"" "${VALUES_FILE}"
 
-                az aks get-credentials \
-                  --resource-group $(AKS_RESOURCE_GROUP) \
-                  --name $(AKS_CLUSTER_NAME) \
-                  --overwrite-existing
-
-                helm upgrade --install front \
-                  "$(HELM_OCI_REPO)/front" \
-                  --version "${CHART_VERSION}" \
-                  -f /tmp/helm-chart/front/values.yaml \
-                  -f /tmp/helm-chart/front/values-${{ parameters.environment }}.yaml \
-                  --set image.repository=$(IMAGE_REPO) \
-                  --set image.tag="${IMAGE_TAG}" \
-                  --namespace ${{ parameters.environment }} \
-                  --create-namespace \
-                  --atomic \
-                  --timeout 5m \
-                  --wait
+              # Commit & push
+              git config user.email "azure-pipelines[bot]@users.noreply.github.com"
+              git config user.name "Azure Pipelines"
+              git add "${VALUES_FILE}"
+              git commit -m "chore($(APP_NAME)): promote ${{ parameters.environment }} image tag to ${IMAGE_TAG}"
+              git push origin main
+            displayName: 'Clone gitops + yq update + push'
