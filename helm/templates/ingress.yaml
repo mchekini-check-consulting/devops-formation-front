@@ -22,3 +22,27 @@ spec:
                   number: {{ .service.port }}
           {{- end }}
 {{- end }}
+---
+{{- if and .Values.rollout.enabled .Values.ingress.preview }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Values.ingress.preview.name }}
+  labels:
+    {{- include "front.labels" . | nindent 4 }}
+  annotations:
+    {{- toYaml .Values.ingress.annotations | nindent 4 }}
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  rules:
+    - host: {{ .Values.ingress.preview.host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Chart.Name }}-preview
+                port:
+                  number: {{ .Values.service.port }}
+{{- end }}
