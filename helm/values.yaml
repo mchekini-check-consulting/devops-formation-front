@@ -74,6 +74,15 @@ hpa:
 vpa:
   updateMode: "Off"
 
+rollout:
+  enabled: false
+  strategy:
+    blueGreen:
+      activeService: front
+      previewService: front-preview
+      autoPromotionEnabled: false
+      scaleDownDelaySeconds: 600
+
 ingress:
   enabled: true
   name: ecommerce-ingress
