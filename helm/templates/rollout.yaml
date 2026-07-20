@@ -12,11 +12,7 @@ spec:
     matchLabels:
       {{- include "front.selectorLabels" . | nindent 6 }}
   strategy:
-    blueGreen:
-      activeService: {{ .Values.rollout.strategy.blueGreen.activeService }}
-      previewService: {{ .Values.rollout.strategy.blueGreen.previewService }}
-      autoPromotionEnabled: {{ .Values.rollout.strategy.blueGreen.autoPromotionEnabled }}
-      scaleDownDelaySeconds: {{ .Values.rollout.strategy.blueGreen.scaleDownDelaySeconds }}
+    {{- toYaml .Values.rollout.strategy | nindent 4 }}
   template:
     metadata:
       labels:
