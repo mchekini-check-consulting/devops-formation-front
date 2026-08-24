@@ -13,6 +13,13 @@ spec:
       from:
         - namespaceSelector:
             matchLabels:
-              kubernetes.io/metadata.name: ingress-nginx
+              kubernetes.io/metadata.name: kong
+        {{- if and .Values.networkPolicy .Values.networkPolicy.extraIngressNamespaces }}
+        {{- range .Values.networkPolicy.extraIngressNamespaces }}
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ . }}
+        {{- end }}
+        {{- end }}
   policyTypes:
     - Ingress
