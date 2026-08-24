@@ -9,9 +9,17 @@ spec:
   issuerRef:
     name: {{ .Values.certificate.issuer }}
     kind: ClusterIssuer
+  {{- if .Values.certificate.dnsNames }}
+  dnsNames:
+    {{- range .Values.certificate.dnsNames }}
+    - {{ . | quote }}
+    {{- end }}
+  {{- end }}
+  {{- if .Values.certificate.ipAddresses }}
   ipAddresses:
     {{- range .Values.certificate.ipAddresses }}
     - {{ . | quote }}
     {{- end }}
+  {{- end }}
 {{- end }}
 {{- end }}
