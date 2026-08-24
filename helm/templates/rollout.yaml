@@ -1,20 +1,18 @@
-{{- if not .Values.rollout.enabled }}
-apiVersion: apps/v1
-kind: Deployment
+{{- if .Values.rollout.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
 metadata:
   name: {{ .Chart.Name }}
   labels:
     {{- include "front.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
+  revisionHistoryLimit: 3
   selector:
     matchLabels:
       {{- include "front.selectorLabels" . | nindent 6 }}
   strategy:
-    type: {{ .Values.strategy.type }}
-    rollingUpdate:
-      maxSurge: {{ .Values.strategy.rollingUpdate.maxSurge }}
-      maxUnavailable: {{ .Values.strategy.rollingUpdate.maxUnavailable }}
+    {{- toYaml .Values.rollout.strategy | nindent 4 }}
   template:
     metadata:
       labels:
@@ -34,7 +32,7 @@ spec:
             - weight: 100
               preference:
                 matchExpressions:
-                  - key: workload
+                  - key: kubernetes.azure.com/agentpool
                     operator: In
                     values:
                       - {{ .Values.affinity.nodepool }}
