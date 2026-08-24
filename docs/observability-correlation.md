@@ -2,7 +2,7 @@
 
 ## Objectif
 
-Permettre le suivi d'un flux métier complet (catalogue → commande → paiement) à travers les trois microservices en injectant deux headers HTTP dans chaque requête émise par le frontend :
+Permettre le suivi d'un flux métier complet (catalogue → commande → paiement) à travers les trois microservices en injectant deux headersd HTTP dans chaque requête émise par le frontend :
 
 | Header | Valeur | Portée |
 |---|---|---|
