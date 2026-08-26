@@ -37,7 +37,22 @@ export default function Sidebar({ page, setPage }: SidebarProps) {
           <ShopIcon size={20} />
         </div>
         <div className="sidebar-brand-text">
-          <h1>ShopMicro</h1>
+          <h1>
+            ShopMicro{" "}
+            <span
+              style={{
+                background: "#22c55e",
+                color: "#fff",
+                borderRadius: 4,
+                padding: "2px 8px",
+                fontSize: "0.75rem",
+                fontWeight: 700,
+                verticalAlign: "middle",
+              }}
+            >
+              v2
+            </span>
+          </h1>
           <p>E-Commerce Platform</p>
         </div>
       </button>

@@ -16,7 +16,7 @@ interface NavbarProps {
 export default function Navbar({ page, setPage }: NavbarProps) {
   const { count } = useCart();
   return (
-    <nav className="navbar" style={{ background: "#1e3a8a" }}>
+    <nav className="navbar">
       <div className="container">
         <div className="navbar-inner">
           <button
@@ -36,19 +36,6 @@ export default function Navbar({ page, setPage }: NavbarProps) {
           >
             <ShopIcon />
             ShopMicro
-            <span
-              style={{
-                background: "#22c55e",
-                color: "#fff",
-                borderRadius: 4,
-                padding: "2px 8px",
-                fontSize: "0.75rem",
-                fontWeight: 700,
-                marginLeft: 4,
-              }}
-            >
-              v2
-            </span>
             <span>E-Commerce Platform</span>
           </button>
 
