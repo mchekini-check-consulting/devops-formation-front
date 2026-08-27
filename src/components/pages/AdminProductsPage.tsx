@@ -165,7 +165,7 @@ export default function AdminProductsPage() {
                 <label className="form-label text-xs">Solde (optionnel)</label>
                 <input
                   className="form-control"
-                  placeholder="0.00"
+                  placeholder="Solde"
                   type="number"
                   step="0.01"
                   min="0"
