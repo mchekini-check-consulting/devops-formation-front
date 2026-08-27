@@ -56,7 +56,7 @@ export default function AdminProductsPage() {
       price: parseFloat(price || "0"),
       category,
       description: description || undefined,
-      solde: solde ? parseFloat(solde) : undefined,
+      solde: solde ? Number.parseFloat(solde) : undefined,
     };
 
     try {
@@ -162,8 +162,9 @@ export default function AdminProductsPage() {
 
             <div className="grid-2 mb-4">
               <div className="form-group">
-                <label className="form-label text-xs">Solde (optionnel)</label>
+                <label className="form-label text-xs" htmlFor="solde-input">Solde (optionnel)</label>
                 <input
+                  id="solde-input"
                   className="form-control"
                   placeholder="Solde"
                   type="number"
