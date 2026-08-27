@@ -19,7 +19,7 @@ jest.mock("../../../services/keycloak", () => ({
 }));
 
 const mockProducts: Product[] = [
-  { id: "p1", name: "Laptop", price: 999, category: "Informatique", stock: 10 },
+  { id: "p1", name: "Laptop", price: 999, category: "Informatique", stock: 10, solde: 150.5 },
   { id: "p2", name: "Mouse", price: 29, category: "Périphériques", stock: 50 },
 ];
 
@@ -51,6 +51,18 @@ describe("AdminProductsPage", () => {
     });
     expect(screen.getByText("Mouse")).toBeInTheDocument();
     expect(screen.getByText(/Produits \(2\)/)).toBeInTheDocument();
+  });
+
+  it("shows solde when present and a dash when absent (v1 payload)", async () => {
+    render(<AdminProductsPage />);
+    await waitFor(() => {
+      expect(screen.getByText("Laptop")).toBeInTheDocument();
+    });
+    expect(screen.getByText(/150,50/)).toBeInTheDocument();
+
+    const mouseRow = screen.getByText("Mouse").closest("tr");
+    expect(mouseRow).not.toBeNull();
+    expect(mouseRow!.textContent).toContain("—");
   });
 
   it("displays the add product form", () => {
@@ -96,6 +108,7 @@ describe("AdminProductsPage", () => {
 
     await user.type(screen.getByPlaceholderText("Nom"), "Keyboard");
     await user.type(screen.getByPlaceholderText("0.00"), "79");
+    await user.type(screen.getByPlaceholderText("Solde"), "42.5");
 
     const submitBtn = screen.getByText("Ajouter le produit");
     await user.click(submitBtn);
@@ -103,6 +116,51 @@ describe("AdminProductsPage", () => {
     await waitFor(() => {
       expect(screen.getByText("Keyboard")).toBeInTheDocument();
     });
+
+    const createCall = (global.fetch as jest.Mock).mock.calls[1];
+    const sentBody = JSON.parse(createCall[1].body);
+    expect(sentBody.solde).toBe(42.5);
+  });
+
+  it("omits solde from the payload when left empty", async () => {
+    const user = userEvent.setup();
+    const newProduct = { id: "p4", name: "Cable", price: 5, category: "Informatique" };
+
+    let callCount = 0;
+    (global.fetch as jest.Mock).mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          headers: new Headers({ "content-type": "application/json" }),
+          text: () => Promise.resolve(JSON.stringify(mockProducts)),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        status: 201,
+        headers: new Headers({ "content-type": "application/json" }),
+        text: () => Promise.resolve(JSON.stringify(newProduct)),
+      });
+    });
+
+    render(<AdminProductsPage />);
+    await waitFor(() => {
+      expect(screen.getByText("Laptop")).toBeInTheDocument();
+    });
+
+    await user.type(screen.getByPlaceholderText("Nom"), "Cable");
+    await user.type(screen.getByPlaceholderText("0.00"), "5");
+    await user.click(screen.getByText("Ajouter le produit"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Cable")).toBeInTheDocument();
+    });
+
+    const createCall = (global.fetch as jest.Mock).mock.calls[1];
+    const sentBody = JSON.parse(createCall[1].body);
+    expect(sentBody.solde).toBeUndefined();
   });
 
   it("shows empty state when no products", async () => {
