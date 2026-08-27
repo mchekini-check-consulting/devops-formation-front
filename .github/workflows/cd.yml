@@ -44,6 +44,8 @@ jobs:
           tags: front:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          build-args: |
+            APK_CACHE_BUST=${{ github.run_id }}
           outputs: type=oci,dest=front-image.tar
 
       - name: Upload Docker image artifact

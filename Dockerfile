@@ -11,6 +11,11 @@ RUN npm run build
 # ── Stage 2: serve ─────────────────────────────────────────────
 FROM nginx:alpine AS runner
 
+# Cache-bust this layer so `apk upgrade` re-hits the package index every build,
+# instead of replaying a stale cached layer (GHA cache pins layers by instruction
+# text + parent digest, which doesn't know new CVE fixes landed upstream).
+ARG APK_CACHE_BUST=1
+
 # Update base packages (fix CVEs) + install gettext for envsubst
 RUN apk upgrade --no-cache && apk add --no-cache gettext
 ENV NODE_ENV=development
