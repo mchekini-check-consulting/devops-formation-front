@@ -5,6 +5,9 @@ export interface Product {
   category: string;
   description?: string;
   stock?: number;
+  // Absent when the request lands on a v1 (pre-solde) canary pod, null when
+  // a v2 pod served it but no value was set, a number once populated.
+  solde?: number | null;
 }
 
 export interface OrderProduct {
@@ -49,4 +52,5 @@ export interface CreateProductPayload {
   category: string;
   description?: string;
   stock?: number;
+  solde?: number;
 }

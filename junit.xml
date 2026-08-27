@@ -1,0 +1,325 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="jest tests" tests="149" failures="0" errors="0" time="17.063">
+  <testsuite name="keycloak service" errors="0" failures="0" skipped="0" timestamp="2026-08-27T19:13:42" time="3.234" tests="17">
+    <testcase classname="keycloak service with auth disabled initKeycloak returns true without calling keycloak.init" name="keycloak service with auth disabled initKeycloak returns true without calling keycloak.init" time="0.559">
+    </testcase>
+    <testcase classname="keycloak service with auth disabled getToken returns empty string" name="keycloak service with auth disabled getToken returns empty string" time="0.004">
+    </testcase>
+    <testcase classname="keycloak service with auth disabled getUsername returns &apos;anonymous&apos;" name="keycloak service with auth disabled getUsername returns &apos;anonymous&apos;" time="0.004">
+    </testcase>
+    <testcase classname="keycloak service with auth disabled getUserId returns &apos;anonymous&apos;" name="keycloak service with auth disabled getUserId returns &apos;anonymous&apos;" time="0.004">
+    </testcase>
+    <testcase classname="keycloak service with auth disabled hasRole returns true for any role" name="keycloak service with auth disabled hasRole returns true for any role" time="0.004">
+    </testcase>
+    <testcase classname="keycloak service with auth disabled logout does nothing" name="keycloak service with auth disabled logout does nothing" time="0.004">
+    </testcase>
+    <testcase classname="keycloak service with auth enabled initKeycloak calls keycloak.init and stores tokens on success" name="keycloak service with auth enabled initKeycloak calls keycloak.init and stores tokens on success" time="0.01">
+    </testcase>
+    <testcase classname="keycloak service with auth enabled initKeycloak restores tokens from sessionStorage" name="keycloak service with auth enabled initKeycloak restores tokens from sessionStorage" time="0.004">
+    </testcase>
+    <testcase classname="keycloak service with auth enabled initKeycloak does not store tokens when not authenticated" name="keycloak service with auth enabled initKeycloak does not store tokens when not authenticated" time="0.011">
+    </testcase>
+    <testcase classname="keycloak service with auth enabled initKeycloak sets onTokenExpired handler" name="keycloak service with auth enabled initKeycloak sets onTokenExpired handler" time="0.004">
+    </testcase>
+    <testcase classname="keycloak service with auth enabled onTokenExpired refreshes and stores new tokens" name="keycloak service with auth enabled onTokenExpired refreshes and stores new tokens" time="0.012">
+    </testcase>
+    <testcase classname="keycloak service with auth enabled getToken calls updateToken and returns token" name="keycloak service with auth enabled getToken calls updateToken and returns token" time="0.018">
+    </testcase>
+    <testcase classname="keycloak service with auth enabled getUsername returns preferred_username from tokenParsed" name="keycloak service with auth enabled getUsername returns preferred_username from tokenParsed" time="0.007">
+    </testcase>
+    <testcase classname="keycloak service with auth enabled getUserId returns sub from tokenParsed" name="keycloak service with auth enabled getUserId returns sub from tokenParsed" time="0.009">
+    </testcase>
+    <testcase classname="keycloak service with auth enabled hasRole returns true when user has the role" name="keycloak service with auth enabled hasRole returns true when user has the role" time="0.005">
+    </testcase>
+    <testcase classname="keycloak service with auth enabled hasRole returns false when user does not have the role" name="keycloak service with auth enabled hasRole returns false when user does not have the role" time="0.003">
+    </testcase>
+    <testcase classname="keycloak service with auth enabled logout clears sessionStorage and calls keycloak.logout" name="keycloak service with auth enabled logout clears sessionStorage and calls keycloak.logout" time="0.006">
+    </testcase>
+  </testsuite>
+  <testsuite name="http module" errors="0" failures="0" skipped="0" timestamp="2026-08-27T19:13:42" time="3.698" tests="11">
+    <testcase classname="http module buildUrl returns dev proxy paths when NODE_ENV is development" name="http module buildUrl returns dev proxy paths when NODE_ENV is development" time="0.686">
+    </testcase>
+    <testcase classname="http module buildUrl appends path in dev mode" name="http module buildUrl appends path in dev mode" time="0.005">
+    </testcase>
+    <testcase classname="http module buildUrl returns config URLs when NODE_ENV is production" name="http module buildUrl returns config URLs when NODE_ENV is production" time="0.011">
+    </testcase>
+    <testcase classname="http module buildUrl concatenates base and path in production" name="http module buildUrl concatenates base and path in production" time="0.01">
+    </testcase>
+    <testcase classname="http module buildUrl cleans trailing slash from base before joining path" name="http module buildUrl cleans trailing slash from base before joining path" time="0.004">
+    </testcase>
+    <testcase classname="http module doFetch injects Authorization and tracing headers" name="http module doFetch injects Authorization and tracing headers" time="0.009">
+    </testcase>
+    <testcase classname="http module doFetch parses JSON response" name="http module doFetch parses JSON response" time="0.008">
+    </testcase>
+    <testcase classname="http module doFetch returns text when content-type is not JSON" name="http module doFetch returns text when content-type is not JSON" time="0.008">
+    </testcase>
+    <testcase classname="http module doFetch throws ApiError on non-ok response" name="http module doFetch throws ApiError on non-ok response" time="0.435">
+    </testcase>
+    <testcase classname="http module doFetch dispatches rate-limit event on 429 response" name="http module doFetch dispatches rate-limit event on 429 response" time="0.024">
+    </testcase>
+    <testcase classname="http module doFetch dispatches rate-limit event and throws ApiError(429) on network error" name="http module doFetch dispatches rate-limit event and throws ApiError(429) on network error" time="0.011">
+    </testcase>
+  </testsuite>
+  <testsuite name="ApiError" errors="0" failures="0" skipped="0" timestamp="2026-08-27T19:13:42" time="4.55" tests="29">
+    <testcase classname="ApiError creates an error with status and payload" name="ApiError creates an error with status and payload" time="0.024">
+    </testcase>
+    <testcase classname="ApiError uses custom message when provided" name="ApiError uses custom message when provided" time="0.007">
+    </testcase>
+    <testcase classname="ApiError falls back to generic message when no payload message" name="ApiError falls back to generic message when no payload message" time="0">
+    </testcase>
+    <testcase classname="isRateLimitError returns true for ApiError with status 429" name="isRateLimitError returns true for ApiError with status 429" time="0.007">
+    </testcase>
+    <testcase classname="isRateLimitError returns false for ApiError with other status" name="isRateLimitError returns false for ApiError with other status" time="0.006">
+    </testcase>
+    <testcase classname="isRateLimitError returns false for non-ApiError" name="isRateLimitError returns false for non-ApiError" time="0.004">
+    </testcase>
+    <testcase classname="catalogService getProducts calls fetch and returns products array" name="catalogService getProducts calls fetch and returns products array" time="0.025">
+    </testcase>
+    <testcase classname="catalogService getProducts passes query params for filters" name="catalogService getProducts passes query params for filters" time="0.014">
+    </testcase>
+    <testcase classname="catalogService getProducts throws ApiError on invalid payload" name="catalogService getProducts throws ApiError on invalid payload" time="0.145">
+    </testcase>
+    <testcase classname="catalogService createProduct sends POST with payload" name="catalogService createProduct sends POST with payload" time="0.02">
+    </testcase>
+    <testcase classname="catalogService deleteProduct sends DELETE" name="catalogService deleteProduct sends DELETE" time="0.013">
+    </testcase>
+    <testcase classname="orderService createOrder sends POST and returns order" name="orderService createOrder sends POST and returns order" time="0.024">
+    </testcase>
+    <testcase classname="orderService getOrders returns array of orders" name="orderService getOrders returns array of orders" time="0.021">
+    </testcase>
+    <testcase classname="orderService getOrder returns single order" name="orderService getOrder returns single order" time="0.02">
+    </testcase>
+    <testcase classname="orderService createOrder re-throws on error" name="orderService createOrder re-throws on error" time="0.057">
+    </testcase>
+    <testcase classname="orderService getOrders re-throws on error" name="orderService getOrders re-throws on error" time="0.024">
+    </testcase>
+    <testcase classname="orderService getOrder re-throws on error" name="orderService getOrder re-throws on error" time="0.013">
+    </testcase>
+    <testcase classname="orderService updateOrderStatus re-throws on error" name="orderService updateOrderStatus re-throws on error" time="0.016">
+    </testcase>
+    <testcase classname="orderService updateOrderStatus sends PATCH" name="orderService updateOrderStatus sends PATCH" time="0.012">
+    </testcase>
+    <testcase classname="paymentService createPayment normalizes camelCase response to snake_case" name="paymentService createPayment normalizes camelCase response to snake_case" time="0.016">
+    </testcase>
+    <testcase classname="paymentService getPayments normalizes array of payments" name="paymentService getPayments normalizes array of payments" time="0.016">
+    </testcase>
+    <testcase classname="paymentService createPayment handles snake_case response" name="paymentService createPayment handles snake_case response" time="0.015">
+    </testcase>
+    <testcase classname="paymentService getPayments handles snake_case response" name="paymentService getPayments handles snake_case response" time="0.012">
+    </testcase>
+    <testcase classname="paymentService getPayments handles non-array response" name="paymentService getPayments handles non-array response" time="0.006">
+    </testcase>
+    <testcase classname="paymentService getPayment handles snake_case response" name="paymentService getPayment handles snake_case response" time="0.01">
+    </testcase>
+    <testcase classname="paymentService createPayment re-throws on error" name="paymentService createPayment re-throws on error" time="0.024">
+    </testcase>
+    <testcase classname="paymentService getPayments re-throws on error" name="paymentService getPayments re-throws on error" time="0.014">
+    </testcase>
+    <testcase classname="paymentService getPayment re-throws on error" name="paymentService getPayment re-throws on error" time="0.015">
+    </testcase>
+    <testcase classname="paymentService getPayment normalizes single payment" name="paymentService getPayment normalizes single payment" time="0.009">
+    </testcase>
+  </testsuite>
+  <testsuite name="Cart (useCart + CartProvider)" errors="0" failures="0" skipped="0" timestamp="2026-08-27T19:13:45" time="3.491" tests="9">
+    <testcase classname="Cart (useCart + CartProvider) starts with an empty cart" name="Cart (useCart + CartProvider) starts with an empty cart" time="0.114">
+    </testcase>
+    <testcase classname="Cart (useCart + CartProvider) ADD adds a product with quantity 1" name="Cart (useCart + CartProvider) ADD adds a product with quantity 1" time="0.018">
+    </testcase>
+    <testcase classname="Cart (useCart + CartProvider) ADD same product increments quantity" name="Cart (useCart + CartProvider) ADD same product increments quantity" time="0.014">
+    </testcase>
+    <testcase classname="Cart (useCart + CartProvider) ADD different products creates separate entries" name="Cart (useCart + CartProvider) ADD different products creates separate entries" time="0.011">
+    </testcase>
+    <testcase classname="Cart (useCart + CartProvider) REMOVE removes a product by id" name="Cart (useCart + CartProvider) REMOVE removes a product by id" time="0.013">
+    </testcase>
+    <testcase classname="Cart (useCart + CartProvider) SET_QTY updates quantity" name="Cart (useCart + CartProvider) SET_QTY updates quantity" time="0.008">
+    </testcase>
+    <testcase classname="Cart (useCart + CartProvider) SET_QTY with qty &lt;= 0 removes the item" name="Cart (useCart + CartProvider) SET_QTY with qty &lt;= 0 removes the item" time="0.014">
+    </testcase>
+    <testcase classname="Cart (useCart + CartProvider) CLEAR empties the cart" name="Cart (useCart + CartProvider) CLEAR empties the cart" time="0.021">
+    </testcase>
+    <testcase classname="Cart (useCart + CartProvider) throws when useCart is used outside CartProvider" name="Cart (useCart + CartProvider) throws when useCart is used outside CartProvider" time="0.378">
+    </testcase>
+  </testsuite>
+  <testsuite name="CartPage" errors="0" failures="0" skipped="0" timestamp="2026-08-27T19:13:42" time="8.906" tests="7">
+    <testcase classname="CartPage shows empty state when cart is empty" name="CartPage shows empty state when cart is empty" time="0.16">
+    </testcase>
+    <testcase classname="CartPage displays cart items with product details" name="CartPage displays cart items with product details" time="0.596">
+    </testcase>
+    <testcase classname="CartPage displays total price" name="CartPage displays total price" time="0.104">
+    </testcase>
+    <testcase classname="CartPage increments quantity when + is clicked" name="CartPage increments quantity when + is clicked" time="0.619">
+    </testcase>
+    <testcase classname="CartPage decrements quantity when − is clicked (removes at 0)" name="CartPage decrements quantity when − is clicked (removes at 0)" time="0.73">
+    </testcase>
+    <testcase classname="CartPage creates order when &apos;Créer la commande&apos; is clicked" name="CartPage creates order when &apos;Créer la commande&apos; is clicked" time="0.725">
+    </testcase>
+    <testcase classname="CartPage shows error when order creation fails" name="CartPage shows error when order creation fails" time="0.858">
+    </testcase>
+  </testsuite>
+  <testsuite name="config" errors="0" failures="0" skipped="0" timestamp="2026-08-27T19:13:49" time="2.875" tests="6">
+    <testcase classname="config API_CONFIG uses fallback values when no env or runtime config" name="config API_CONFIG uses fallback values when no env or runtime config" time="0.047">
+    </testcase>
+    <testcase classname="config API_CONFIG reads REACT_APP_ env variables" name="config API_CONFIG reads REACT_APP_ env variables" time="0.008">
+    </testcase>
+    <testcase classname="config API_CONFIG prefers window.__APP_CONFIG__ over env" name="config API_CONFIG prefers window.__APP_CONFIG__ over env" time="0.018">
+    </testcase>
+    <testcase classname="config KEYCLOAK_CONFIG has sensible defaults" name="config KEYCLOAK_CONFIG has sensible defaults" time="0.019">
+    </testcase>
+    <testcase classname="config isAuthEnabled returns true by default" name="config isAuthEnabled returns true by default" time="0.014">
+    </testcase>
+    <testcase classname="config isAuthEnabled returns false when AUTH_ENABLED is &apos;false&apos;" name="config isAuthEnabled returns false when AUTH_ENABLED is &apos;false&apos;" time="0.023">
+    </testcase>
+  </testsuite>
+  <testsuite name="PaymentPage" errors="0" failures="0" skipped="0" timestamp="2026-08-27T19:13:46" time="6.33" tests="8">
+    <testcase classname="PaymentPage renders loading state initially" name="PaymentPage renders loading state initially" time="0.436">
+    </testcase>
+    <testcase classname="PaymentPage displays payment statistics after loading" name="PaymentPage displays payment statistics after loading" time="0.488">
+    </testcase>
+    <testcase classname="PaymentPage displays correct stat values" name="PaymentPage displays correct stat values" time="0.2">
+    </testcase>
+    <testcase classname="PaymentPage displays payment table with rows" name="PaymentPage displays payment table with rows" time="0.222">
+    </testcase>
+    <testcase classname="PaymentPage shows SUCCESS and FAILED badges in the table" name="PaymentPage shows SUCCESS and FAILED badges in the table" time="0.211">
+    </testcase>
+    <testcase classname="PaymentPage shows empty state when no payments" name="PaymentPage shows empty state when no payments" time="0.056">
+    </testcase>
+    <testcase classname="PaymentPage shows error when API fails" name="PaymentPage shows error when API fails" time="0.509">
+    </testcase>
+    <testcase classname="PaymentPage shows simulation notice" name="PaymentPage shows simulation notice" time="0.03">
+    </testcase>
+  </testsuite>
+  <testsuite name="OrdersPage" errors="0" failures="0" skipped="0" timestamp="2026-08-27T19:13:42" time="10.338" tests="12">
+    <testcase classname="OrdersPage renders loading skeletons initially" name="OrdersPage renders loading skeletons initially" time="0.217">
+    </testcase>
+    <testcase classname="OrdersPage displays orders after loading" name="OrdersPage displays orders after loading" time="0.53">
+    </testcase>
+    <testcase classname="OrdersPage displays order status stats" name="OrdersPage displays order status stats" time="0.123">
+    </testcase>
+    <testcase classname="OrdersPage shows empty state when no orders" name="OrdersPage shows empty state when no orders" time="0.06">
+    </testcase>
+    <testcase classname="OrdersPage shows error state on API failure" name="OrdersPage shows error state on API failure" time="0.334">
+    </testcase>
+    <testcase classname="OrdersPage highlights order when highlightOrderId matches" name="OrdersPage highlights order when highlightOrderId matches" time="0.222">
+    </testcase>
+    <testcase classname="OrdersPage expands order details when header is clicked" name="OrdersPage expands order details when header is clicked" time="0.881">
+    </testcase>
+    <testcase classname="OrdersPage shows &apos;Payer&apos; button for CREATED orders and handles successful payment" name="OrdersPage shows &apos;Payer&apos; button for CREATED orders and handles successful payment" time="0.981">
+    </testcase>
+    <testcase classname="OrdersPage shows error when payment service fails (500)" name="OrdersPage shows error when payment service fails (500)" time="0.46">
+    </testcase>
+    <testcase classname="OrdersPage shows error when payment is blocked (403 velocity_exceeded)" name="OrdersPage shows error when payment is blocked (403 velocity_exceeded)" time="0.236">
+    </testcase>
+    <testcase classname="OrdersPage shows error when payment is blocked (403 amount_exceeded)" name="OrdersPage shows error when payment is blocked (403 amount_exceeded)" time="0.513">
+    </testcase>
+    <testcase classname="OrdersPage shows generic 403 error for unknown reason" name="OrdersPage shows generic 403 error for unknown reason" time="0.576">
+    </testcase>
+  </testsuite>
+  <testsuite name="Sidebar" errors="0" failures="0" skipped="0" timestamp="2026-08-27T19:13:47" time="5.897" tests="9">
+    <testcase classname="Sidebar renders brand text" name="Sidebar renders brand text" time="0.271">
+    </testcase>
+    <testcase classname="Sidebar renders navigation items" name="Sidebar renders navigation items" time="0.103">
+    </testcase>
+    <testcase classname="Sidebar hides Admin link for non-admin users" name="Sidebar hides Admin link for non-admin users" time="0.042">
+    </testcase>
+    <testcase classname="Sidebar shows Admin link for admin users" name="Sidebar shows Admin link for admin users" time="0.034">
+    </testcase>
+    <testcase classname="Sidebar navigates when a nav item is clicked" name="Sidebar navigates when a nav item is clicked" time="0.292">
+    </testcase>
+    <testcase classname="Sidebar highlights current active page" name="Sidebar highlights current active page" time="0.034">
+    </testcase>
+    <testcase classname="Sidebar displays username" name="Sidebar displays username" time="0.037">
+    </testcase>
+    <testcase classname="Sidebar has a logout button" name="Sidebar has a logout button" time="0.069">
+    </testcase>
+    <testcase classname="Sidebar calls logout when button is clicked" name="Sidebar calls logout when button is clicked" time="0.154">
+    </testcase>
+  </testsuite>
+  <testsuite name="App" errors="0" failures="0" skipped="0" timestamp="2026-08-27T19:13:42" time="11.66" tests="9">
+    <testcase classname="App renders with CatalogPage by default" name="App renders with CatalogPage by default" time="1.595">
+    </testcase>
+    <testcase classname="App renders sidebar navigation" name="App renders sidebar navigation" time="0.383">
+    </testcase>
+    <testcase classname="App navigates to CartPage when Panier is clicked" name="App navigates to CartPage when Panier is clicked" time="0.445">
+    </testcase>
+    <testcase classname="App navigates to OrdersPage when Commandes is clicked" name="App navigates to OrdersPage when Commandes is clicked" time="0.576">
+    </testcase>
+    <testcase classname="App navigates to PaymentPage when Paiements is clicked" name="App navigates to PaymentPage when Paiements is clicked" time="0.409">
+    </testcase>
+    <testcase classname="App navigates to AdminProductsPage when Admin is clicked" name="App navigates to AdminProductsPage when Admin is clicked" time="0.376">
+    </testcase>
+    <testcase classname="App shows RateLimitBanner on api:rate-limit event and auto-hides" name="App shows RateLimitBanner on api:rate-limit event and auto-hides" time="0.083">
+    </testcase>
+    <testcase classname="App hides RateLimitBanner when Fermer is clicked" name="App hides RateLimitBanner when Fermer is clicked" time="0.129">
+    </testcase>
+    <testcase classname="App goToOrders navigates from cart to orders with highlighted order" name="App goToOrders navigates from cart to orders with highlighted order" time="0.723">
+    </testcase>
+  </testsuite>
+  <testsuite name="CatalogPage" errors="0" failures="0" skipped="0" timestamp="2026-08-27T19:13:42" time="12.673" tests="18">
+    <testcase classname="CatalogPage renders loading skeletons initially" name="CatalogPage renders loading skeletons initially" time="0.577">
+    </testcase>
+    <testcase classname="CatalogPage displays products after loading" name="CatalogPage displays products after loading" time="0.535">
+    </testcase>
+    <testcase classname="CatalogPage displays product count" name="CatalogPage displays product count" time="0.226">
+    </testcase>
+    <testcase classname="CatalogPage displays stock warnings for low-stock items" name="CatalogPage displays stock warnings for low-stock items" time="1.297">
+    </testcase>
+    <testcase classname="CatalogPage adds product to cart when &apos;Ajouter&apos; is clicked" name="CatalogPage adds product to cart when &apos;Ajouter&apos; is clicked" time="0.974">
+    </testcase>
+    <testcase classname="CatalogPage shows error state when API fails" name="CatalogPage shows error state when API fails" time="0.668">
+    </testcase>
+    <testcase classname="CatalogPage shows empty state when no products found" name="CatalogPage shows empty state when no products found" time="0.446">
+    </testcase>
+    <testcase classname="CatalogPage submits search form with filters" name="CatalogPage submits search form with filters" time="0.864">
+    </testcase>
+    <testcase classname="CatalogPage resets filters when &apos;Réinitialiser&apos; is clicked" name="CatalogPage resets filters when &apos;Réinitialiser&apos; is clicked" time="0.522">
+    </testcase>
+    <testcase classname="CatalogPage filters by category when category select changes" name="CatalogPage filters by category when category select changes" time="0.19">
+    </testcase>
+    <testcase classname="CatalogPage handles API error with array payload (validation errors)" name="CatalogPage handles API error with array payload (validation errors)" time="0.079">
+    </testcase>
+    <testcase classname="CatalogPage handles API error with nested errors array" name="CatalogPage handles API error with nested errors array" time="0.059">
+    </testcase>
+    <testcase classname="CatalogPage handles API error with string payload" name="CatalogPage handles API error with string payload" time="0.074">
+    </testcase>
+    <testcase classname="CatalogPage handles API error with object msg field" name="CatalogPage handles API error with object msg field" time="0.054">
+    </testcase>
+    <testcase classname="CatalogPage handles API error with object without msg (JSON stringified)" name="CatalogPage handles API error with object without msg (JSON stringified)" time="0.064">
+    </testcase>
+    <testcase classname="CatalogPage displays product description when available" name="CatalogPage displays product description when available" time="0.044">
+    </testcase>
+    <testcase classname="CatalogPage filters by min/max price" name="CatalogPage filters by min/max price" time="0.523">
+    </testcase>
+    <testcase classname="CatalogPage displays singular &apos;produit disponible&apos; for 1 product" name="CatalogPage displays singular &apos;produit disponible&apos; for 1 product" time="0.061">
+    </testcase>
+  </testsuite>
+  <testsuite name="AdminProductsPage" errors="0" failures="0" skipped="0" timestamp="2026-08-27T19:13:51" time="5.525" tests="14">
+    <testcase classname="AdminProductsPage shows access denied for non-admin users" name="AdminProductsPage shows access denied for non-admin users" time="0.023">
+    </testcase>
+    <testcase classname="AdminProductsPage loads and displays products for admin users" name="AdminProductsPage loads and displays products for admin users" time="0.162">
+    </testcase>
+    <testcase classname="AdminProductsPage shows solde when present and a dash when absent (v1 payload)" name="AdminProductsPage shows solde when present and a dash when absent (v1 payload)" time="0.125">
+    </testcase>
+    <testcase classname="AdminProductsPage displays the add product form" name="AdminProductsPage displays the add product form" time="0.074">
+    </testcase>
+    <testcase classname="AdminProductsPage creates a product when form is submitted" name="AdminProductsPage creates a product when form is submitted" time="0.781">
+    </testcase>
+    <testcase classname="AdminProductsPage omits solde from the payload when left empty" name="AdminProductsPage omits solde from the payload when left empty" time="0.411">
+    </testcase>
+    <testcase classname="AdminProductsPage shows empty state when no products" name="AdminProductsPage shows empty state when no products" time="0.046">
+    </testcase>
+    <testcase classname="AdminProductsPage shows error when product load fails" name="AdminProductsPage shows error when product load fails" time="0.138">
+    </testcase>
+    <testcase classname="AdminProductsPage resets form when &apos;Réinitialiser&apos; is clicked" name="AdminProductsPage resets form when &apos;Réinitialiser&apos; is clicked" time="0.273">
+    </testcase>
+    <testcase classname="AdminProductsPage deletes a product when delete button is clicked and confirmed" name="AdminProductsPage deletes a product when delete button is clicked and confirmed" time="0.139">
+    </testcase>
+    <testcase classname="AdminProductsPage does not delete when confirm is cancelled" name="AdminProductsPage does not delete when confirm is cancelled" time="0.137">
+    </testcase>
+    <testcase classname="AdminProductsPage shows error when delete fails" name="AdminProductsPage shows error when delete fails" time="0.136">
+    </testcase>
+    <testcase classname="AdminProductsPage shows API error with payload message on create failure" name="AdminProductsPage shows API error with payload message on create failure" time="0.447">
+    </testcase>
+    <testcase classname="AdminProductsPage shows generic create error on non-API failure" name="AdminProductsPage shows generic create error on non-API failure" time="0.517">
+    </testcase>
+  </testsuite>
+</testsuites>

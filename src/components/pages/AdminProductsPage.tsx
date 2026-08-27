@@ -15,6 +15,7 @@ export default function AdminProductsPage() {
   const [price, setPrice] = useState("");
   const [category, setCategory] = useState("Informatique");
   const [description, setDescription] = useState("");
+  const [solde, setSolde] = useState("");
 
   const isAdmin = hasRole("admin");
 
@@ -55,6 +56,7 @@ export default function AdminProductsPage() {
       price: parseFloat(price || "0"),
       category,
       description: description || undefined,
+      solde: solde ? Number.parseFloat(solde) : undefined,
     };
 
     try {
@@ -64,6 +66,7 @@ export default function AdminProductsPage() {
       setPrice("");
       setCategory("Informatique");
       setDescription("");
+      setSolde("");
     } catch (err: any) {
       if (isRateLimitError(err)) {
         // Handled by global banner
@@ -157,6 +160,22 @@ export default function AdminProductsPage() {
               </div>
             </div>
 
+            <div className="grid-2 mb-4">
+              <div className="form-group">
+                <label className="form-label text-xs" htmlFor="solde-input">Solde (optionnel)</label>
+                <input
+                  id="solde-input"
+                  className="form-control"
+                  placeholder="Solde"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={solde}
+                  onChange={(e) => setSolde(e.target.value)}
+                />
+              </div>
+            </div>
+
             <div className="d-flex gap-2">
               <button className="btn btn-primary" type="submit">
                 Ajouter le produit
@@ -169,6 +188,7 @@ export default function AdminProductsPage() {
                   setPrice("");
                   setCategory("Informatique");
                   setDescription("");
+                  setSolde("");
                 }}
               >
                 Réinitialiser
@@ -214,6 +234,7 @@ export default function AdminProductsPage() {
                   <th>Prix</th>
                   <th>Catégorie</th>
                   <th>Stock</th>
+                  <th>Solde</th>
                   <th></th>
                 </tr>
               </thead>
@@ -231,6 +252,9 @@ export default function AdminProductsPage() {
                       <span className="badge badge-secondary">{p.category}</span>
                     </td>
                     <td className="text-muted">{p.stock ?? "—"}</td>
+                    <td className="text-muted">
+                      {p.solde != null ? fmt(p.solde) : "—"}
+                    </td>
                     <td style={{ textAlign: "right" }}>
                       <button
                         className="btn btn-ghost btn-icon btn-sm"
