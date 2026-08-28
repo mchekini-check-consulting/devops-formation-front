@@ -5,9 +5,13 @@ export interface Product {
   category: string;
   description?: string;
   stock?: number;
+<<<<<<< Updated upstream
   // Absent when the request lands on a v1 (pre-solde) canary pod, null when
   // a v2 pod served it but no value was set, a number once populated.
   solde?: number | null;
+=======
+  solde?: boolean;
+>>>>>>> Stashed changes
 }
 
 export interface OrderProduct {
