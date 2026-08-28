@@ -93,6 +93,22 @@ function ProductCard({
           </p>
         )}
 
+        {product.solde && (
+          <span
+            style={{
+              background: "#dc2626",
+              color: "#fff",
+              borderRadius: 4,
+              padding: "2px 8px",
+              fontSize: "0.75rem",
+              fontWeight: 700,
+              alignSelf: "flex-start",
+            }}
+          >
+            SOLDE -20%
+          </span>
+        )}
+
         <div className="d-flex align-center justify-between" style={{ marginTop: "auto", paddingTop: 12 }}>
           <span style={{ fontSize: "1.25rem", fontWeight: 800, color: "var(--foreground)" }}>
             {fmt(product.price)}
